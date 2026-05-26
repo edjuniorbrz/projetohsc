@@ -1,0 +1,83 @@
+# =========================================================================
+# CANONICAL GITIGNORE FOR PORTAL 5W2H (.NET 8 & WEB CODES)
+# =========================================================================
+
+# -------------------------------------------------------------------------
+# Operating System files
+# -------------------------------------------------------------------------
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.swp
+*~
+
+# -------------------------------------------------------------------------
+# .NET / C# / EF Core Compiler and Build artifacts
+# -------------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Pp]ublish/
+*.[Pp]ubxml
+*.azurepubs
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+.idea/
+
+# -------------------------------------------------------------------------
+# SQLite Database files (Prevent local dev db leakage)
+# -------------------------------------------------------------------------
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# -------------------------------------------------------------------------
+# Frontend / Web dependencies and builds
+# -------------------------------------------------------------------------
+node_modules/
+dist/
+build/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# -------------------------------------------------------------------------
+# Local environments & Sensitive files (Prevent JWT token leakage)
+# -------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+appsettings.local.json
+
+# -------------------------------------------------------------------------
+# Gemini / Antigravity Assistant specific files
+# -------------------------------------------------------------------------
+.system_generated/
+*.metadata.json
+*.resolved*
+logs/email_notifications.log
+logs/
+scratch/
+test_emails.js
+test_project_delete.js
+apply_backend_changes.js
+apply_email_changes.js
+apply_uppercase_all.js
+generate_app*.js
+fix*.js
+patch*.js
+revert*.js
+test*.js
+write*.js
+w.js
+nssm.zip
+nssm_extracted/
+uploads/

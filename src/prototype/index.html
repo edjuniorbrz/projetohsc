@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Projetos | TI & Hospitalar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="logo-icon"><i data-lucide="hospital"></i></div>
+                <div class="logo-text">
+                    <h1>Portal <span>Projetos</span></h1>
+                    <p>TI & Hospitalar</p>
+                </div>
+            </div>
+
+            <nav class="main-nav">
+                <p class="nav-title">Menu Principal</p>
+                <a href="#" class="nav-item active" data-target="dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard Gestor</span>
+                </a>
+                <a href="#" class="nav-item" data-target="kanban">
+                    <i data-lucide="kanban-square"></i>
+                    <span>Meu Kanban</span>
+                </a>
+                <a href="#" class="nav-item" data-target="projects">
+                    <i data-lucide="folder-kanban"></i>
+                    <span>Projetos Estruturais</span>
+                </a>
+                
+                <p class="nav-title mt-2">Configurações</p>
+                <a href="#" class="nav-item">
+                    <i data-lucide="users"></i>
+                    <span>Equipe e Acessos</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i data-lucide="settings"></i>
+                    <span>Preferências</span>
+                </a>
+            </nav>
+
+            <div class="user-profile-mini">
+                <div class="avatar">JS</div>
+                <div class="user-info">
+                    <p class="name">João Silva</p>
+                    <p class="role">Gestor de TI</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            
+            <!-- Topbar -->
+            <header class="topbar">
+                <div class="search-bar">
+                    <i data-lucide="search"></i>
+                    <input type="text" placeholder="Buscar projetos, tarefas ou arquivos...">
+                </div>
+
+                <div class="topbar-actions">
+                    <button class="icon-btn tooltip" data-tooltip="Alternar Tema" id="theme-toggle">
+                        <i data-lucide="moon"></i>
+                    </button>
+                    <button class="icon-btn tooltip notification-btn has-alert" data-tooltip="Notificações (3)">
+                        <i data-lucide="bell"></i>
+                        <span class="pulse-ring"></span>
+                        <span class="badge">3</span>
+                    </button>
+                    <div class="btn-primary mock-login-btn" id="role-toggle">
+                        <i data-lucide="user-switch"></i>
+                        Alternar para Analista
+                    </div>
+                </div>
+            </header>
+
+            <!-- Views Container -->
+            <div class="view-container">
+                
+                <!-- Dashboard View (Gestor) -->
+                <section id="view-dashboard" class="view active">
+                    <div class="view-header">
+                        <h2>Visão Geral da Equipe</h2>
+                        <p>Acompanhamento macro e carga de trabalho.</p>
+                    </div>
+
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-icon blue"><i data-lucide="folder"></i></div>
+                            <div class="kpi-data">
+                                <h3>12</h3>
+                                <p>Projetos Ativos</p>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon orange"><i data-lucide="clock"></i></div>
+                            <div class="kpi-data">
+                                <h3>34</h3>
+                                <p>Demandas em Fila</p>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon green"><i data-lucide="check-circle-2"></i></div>
+                            <div class="kpi-data">
+                                <h3>89</h3>
+                                <p>Tarefas Concluídas</p>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon red"><i data-lucide="alert-triangle"></i></div>
+                            <div class="kpi-data">
+                                <h3>3</h3>
+                                <p>Riscos de Atraso</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-widgets">
+                        <div class="widget gantt-widget">
+                            <div class="widget-header">
+                                <h3>Cronograma Estrutural (Gantt Simplificado)</h3>
+                                <button class="btn-text">Ver Expandido</button>
+                            </div>
+                            <div class="gantt-container">
+                                <div class="gantt-timeline">
+                                    <span>Mai</span><span>Jun</span><span>Jul</span><span>Ago</span>
+                                </div>
+                                <div class="gantt-row">
+                                    <div class="gantt-label">Migração Cloud AWS</div>
+                                    <div class="gantt-track">
+                                        <div class="gantt-bar blue" style="left: 0%; width: 40%;"><span>Progresso 40%</span></div>
+                                    </div>
+                                </div>
+                                <div class="gantt-row">
+                                    <div class="gantt-label">Integração PEP/EPR</div>
+                                    <div class="gantt-track">
+                                        <div class="gantt-bar purple" style="left: 20%; width: 60%;"><span>Progresso 60%</span></div>
+                                    </div>
+                                </div>
+                                <div class="gantt-row">
+                                    <div class="gantt-label">Atualização LGPD</div>
+                                    <div class="gantt-track">
+                                        <div class="gantt-bar orange" style="left: 50%; width: 30%;"><span>Previsto</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="widget team-widget">
+                            <div class="widget-header">
+                                <h3>Carga de Trabalho da Equipe</h3>
+                            </div>
+                            <div class="team-list">
+                                <div class="team-member">
+                                    <div class="avatar small">AM</div>
+                                    <div class="member-details">
+                                        <h4>Ana Maria</h4>
+                                        <div class="workload-bar"><div class="fill green" style="width: 45%;"></div></div>
+                                    </div>
+                                    <span class="task-count">4 tarefas</span>
+                                </div>
+                                <div class="team-member">
+                                    <div class="avatar small">CL</div>
+                                    <div class="member-details">
+                                        <h4>Carlos Lima</h4>
+                                        <div class="workload-bar"><div class="fill red" style="width: 90%;"></div></div>
+                                    </div>
+                                    <span class="task-count">12 tarefas</span>
+                                </div>
+                                <div class="team-member">
+                                    <div class="avatar small">RP</div>
+                                    <div class="member-details">
+                                        <h4>Ricardo P.</h4>
+                                        <div class="workload-bar"><div class="fill orange" style="width: 70%;"></div></div>
+                                    </div>
+                                    <span class="task-count">8 tarefas</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Dashboard View (Analista) -->
+                <section id="view-dashboard-analyst" class="view">
+                    <div class="view-header">
+                        <h2>Meu Painel</h2>
+                        <p>Resumo das minhas demandas e projetos em que estou alocado.</p>
+                    </div>
+
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-icon blue"><i data-lucide="folder-kanban"></i></div>
+                            <div class="kpi-data">
+                                <h3>3</h3>
+                                <p>Meus Projetos</p>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon orange"><i data-lucide="clipboard-list"></i></div>
+                            <div class="kpi-data">
+                                <h3>5</h3>
+                                <p>Minhas Tarefas</p>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon green"><i data-lucide="check-square"></i></div>
+                            <div class="kpi-data">
+                                <h3>12</h3>
+                                <p>Concluídas (Mês)</p>
+                            </div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-icon red"><i data-lucide="clock"></i></div>
+                            <div class="kpi-data">
+                                <h3>1</h3>
+                                <p>Atrasada</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-widgets">
+                        <div class="widget gantt-widget">
+                            <div class="widget-header">
+                                <h3>Meus Projetos (Alocado)</h3>
+                            </div>
+                            <div class="gantt-container">
+                                <div class="gantt-timeline">
+                                    <span>Mai</span><span>Jun</span><span>Jul</span><span>Ago</span>
+                                </div>
+                                <div class="gantt-row">
+                                    <div class="gantt-label">Migração Cloud AWS</div>
+                                    <div class="gantt-track">
+                                        <div class="gantt-bar blue" style="left: 0%; width: 40%;"><span>Progresso 40%</span></div>
+                                    </div>
+                                </div>
+                                <div class="gantt-row">
+                                    <div class="gantt-label">Rede Nova Ala</div>
+                                    <div class="gantt-track">
+                                        <div class="gantt-bar purple" style="left: 30%; width: 50%;"><span>Progresso 80%</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="widget team-widget">
+                            <div class="widget-header">
+                                <h3>Minhas Próximas Entregas</h3>
+                            </div>
+                            <div class="team-list">
+                                <div class="team-member">
+                                    <div class="icon-circle orange" style="width:32px;height:32px;min-width:32px;"><i data-lucide="alert-circle" style="width:16px;"></i></div>
+                                    <div class="member-details">
+                                        <h4 style="margin-bottom:2px">Ajuste de Acesso - UTI</h4>
+                                        <p style="font-size:0.75rem;color:var(--text-secondary);">Vence em 2 horas</p>
+                                    </div>
+                                </div>
+                                <div class="team-member">
+                                    <div class="icon-circle blue" style="width:32px;height:32px;min-width:32px;"><i data-lucide="cloud" style="width:16px;"></i></div>
+                                    <div class="member-details">
+                                        <h4 style="margin-bottom:2px">Configurar VPC</h4>
+                                        <p style="font-size:0.75rem;color:var(--text-secondary);">Hoje</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Kanban View (Analista) -->
+                <section id="view-kanban" class="view">
+                    <div class="view-header">
+                        <h2>Meu Kanban</h2>
+                        <p>Visão de execução de demandas diárias.</p>
+                        <div class="kanban-filters">
+                            <button class="filter-btn active">Todas as Tarefas</button>
+                            <button class="filter-btn">Somente Perto do Prazo</button>
+                            <button class="filter-btn">Meus Projetos</button>
+                        </div>
+                    </div>
+
+                    <div class="kanban-board">
+                        
+                        <!-- Coluna 1 -->
+                        <div class="kanban-col">
+                            <div class="col-header">
+                                <h3>A Fazer</h3>
+                                <span class="count">2</span>
+                            </div>
+                            <div class="kanban-cards">
+                                <div class="card">
+                                    <div class="card-tags"><span class="tag urgent">Urgente</span></div>
+                                    <h4>Ajuste de Acesso - Setor UTI</h4>
+                                    <p>Médico plantonista não consegue acessar o prontuário eletrônico no leito 4.</p>
+                                    <div class="card-progress">
+                                        <div class="progress-bar"><div class="fill red" style="width: 0%"></div></div>
+                                        <span>0%</span>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="attachments">
+                                            <i data-lucide="paperclip"></i> 1
+                                        </div>
+                                        <div class="avatar micro">AM</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="card sensitive-card">
+                                    <div class="card-tags"><span class="tag lgpd"><i data-lucide="lock" style="width:12px; height:12px"></i> Dados Sensíveis</span></div>
+                                    <h4>Extração Relatório de Pacientes</h4>
+                                    <p>Diretoria solicita relatório de altas médicas referente a março/2026.</p>
+                                    <div class="card-progress">
+                                        <div class="progress-bar"><div class="fill orange" style="width: 10%"></div></div>
+                                        <span>10%</span>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="sensitive-alert">Requer Autenticação</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="add-card-btn"><i data-lucide="plus"></i> Adicionar Tarefa</button>
+                        </div>
+
+                        <!-- Coluna 2 -->
+                        <div class="kanban-col">
+                            <div class="col-header">
+                                <h3>Em Andamento</h3>
+                                <span class="count">1</span>
+                            </div>
+                            <div class="kanban-cards">
+                                <div class="card active">
+                                    <div class="card-tags"><span class="tag project">Migração AWS</span></div>
+                                    <h4>Configurar VPC Produção</h4>
+                                    <p>Criar subnets e configurar as rotas de acordo com a arquitetura definida.</p>
+                                    <div class="card-progress">
+                                        <div class="progress-bar"><div class="fill blue" style="width: 50%"></div></div>
+                                        <span>50%</span>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="due-date warning"><i data-lucide="clock"></i> Hoje</div>
+                                        <div class="avatar micro">Você</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Coluna 3 -->
+                        <div class="kanban-col">
+                            <div class="col-header">
+                                <h3>Revisão</h3>
+                                <span class="count">1</span>
+                            </div>
+                            <div class="kanban-cards">
+                                <div class="card">
+                                    <div class="card-tags"><span class="tag routine">Rotina</span></div>
+                                    <h4>Patch de Segurança Firewall</h4>
+                                    <p>Atualização aplicada no FGT-01. Aguardando validação do Coordenador.</p>
+                                    <div class="card-progress">
+                                        <div class="progress-bar"><div class="fill purple" style="width: 90%"></div></div>
+                                        <span>90%</span>
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="due-date"><i data-lucide="check"></i> Validar</div>
+                                        <div class="avatar micro">JS</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Coluna 4 -->
+                        <div class="kanban-col">
+                            <div class="col-header">
+                                <h3>Concluído</h3>
+                                <span class="count">12</span>
+                            </div>
+                            <div class="kanban-cards">
+                                <div class="card done">
+                                    <h4>Instalar Nobreak Servidor 3</h4>
+                                    <p>Instalação e testes de carga efetuados com sucesso.</p>
+                                    <div class="card-progress">
+                                        <div class="progress-bar"><div class="fill green" style="width: 100%"></div></div>
+                                        <span>100%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- Projetos Estruturais View -->
+                <section id="view-projects" class="view">
+                    <div class="view-header" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h2>Projetos Estruturais</h2>
+                            <p>Gestão e acompanhamento do portfólio de projetos ativos.</p>
+                        </div>
+                        <button class="btn-primary"><i data-lucide="plus"></i> Novo Projeto</button>
+                    </div>
+
+                    <div class="projects-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:24px;">
+                        <!-- Project Card 1 -->
+                        <div class="widget project-card" style="padding:20px;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+                                <div class="card-tags"><span class="tag" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd;">Em Andamento</span></div>
+                                <button class="btn-text tooltip" data-tooltip="Opções"><i data-lucide="more-horizontal"></i></button>
+                            </div>
+                            <h3 style="font-size:1.1rem; margin-bottom:8px;">Migração Cloud AWS</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px; line-height:1.4;">Migração de todos os sistemas legados e banco de dados local para a infraestrutura em nuvem na AWS.</p>
+                            
+                            <div class="card-progress" style="margin-bottom:20px;">
+                                <div class="progress-bar"><div class="fill blue" style="width: 40%"></div></div>
+                                <span style="font-weight:bold;">40%</span>
+                            </div>
+                            
+                            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); padding-top:16px;">
+                                <div class="team-avatars" style="display:flex;">
+                                    <div class="avatar small" style="margin-right:-8px; border:2px solid var(--bg-surface)">JS</div>
+                                    <div class="avatar small" style="margin-right:-8px; border:2px solid var(--bg-surface)">AM</div>
+                                    <div class="avatar small" style="background:var(--bg-main); border:2px solid var(--bg-surface); color:var(--text-secondary); font-size:0.6rem;">+3</div>
+                                </div>
+                                <div class="due-date" style="font-size:0.75rem;"><i data-lucide="calendar"></i> Dez 2026</div>
+                            </div>
+                        </div>
+
+                        <!-- Project Card 2 -->
+                        <div class="widget project-card" style="padding:20px;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+                                <div class="card-tags"><span class="tag" style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd;">Planejamento</span></div>
+                                <button class="btn-text"><i data-lucide="more-horizontal"></i></button>
+                            </div>
+                            <h3 style="font-size:1.1rem; margin-bottom:8px;">Integração PEP/EPR</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px; line-height:1.4;">Unificação do Prontuário Eletrônico do Paciente em todas as unidades da rede hospitalar.</p>
+                            
+                            <div class="card-progress" style="margin-bottom:20px;">
+                                <div class="progress-bar"><div class="fill purple" style="width: 15%"></div></div>
+                                <span style="font-weight:bold;">15%</span>
+                            </div>
+                            
+                            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); padding-top:16px;">
+                                <div class="team-avatars" style="display:flex;">
+                                    <div class="avatar small" style="margin-right:-8px; border:2px solid var(--bg-surface)">CL</div>
+                                    <div class="avatar small" style="margin-right:-8px; border:2px solid var(--bg-surface)">RP</div>
+                                </div>
+                                <div class="due-date" style="font-size:0.75rem;"><i data-lucide="calendar"></i> Mar 2027</div>
+                            </div>
+                        </div>
+
+                        <!-- Project Card 3 -->
+                        <div class="widget project-card" style="padding:20px;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+                                <div class="card-tags"><span class="tag" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d;">Atrasado</span></div>
+                                <button class="btn-text"><i data-lucide="more-horizontal"></i></button>
+                            </div>
+                            <h3 style="font-size:1.1rem; margin-bottom:8px;">Atualização LGPD / TI</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:20px; line-height:1.4;">Implementação de trilhas de auditoria e anonimização de dados no Data Warehouse central.</p>
+                            
+                            <div class="card-progress" style="margin-bottom:20px;">
+                                <div class="progress-bar"><div class="fill orange" style="width: 60%"></div></div>
+                                <span style="font-weight:bold;">60%</span>
+                            </div>
+                            
+                            <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border-color); padding-top:16px;">
+                                <div class="team-avatars" style="display:flex;">
+                                    <div class="avatar small" style="margin-right:-8px; border:2px solid var(--bg-surface)">JS</div>
+                                </div>
+                                <div class="due-date warning" style="font-size:0.75rem;"><i data-lucide="alert-triangle"></i> Out 2025</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Bell Dropdown Mock -->
+    <div class="notification-panel" id="notif-panel">
+        <div class="panel-header">
+            <h3>Notificações</h3>
+            <button class="btn-text">Marcar todas lidas</button>
+        </div>
+        <div class="notif-list">
+            <div class="notif-item unread">
+                <div class="icon-circle orange"><i data-lucide="clock"></i></div>
+                <div class="notif-content">
+                    <p><strong>Ajuste de Acesso - UTI</strong> vence em 2 horas.</p>
+                    <span>Há 10 minutos</span>
+                </div>
+            </div>
+            <div class="notif-item unread">
+                <div class="icon-circle blue"><i data-lucide="message-square"></i></div>
+                <div class="notif-content">
+                    <p><strong>João Silva</strong> te marcou em <em>Migração AWS</em>.</p>
+                    <span>Há 1 hora</span>
+                </div>
+            </div>
+            <div class="notif-item">
+                <div class="icon-circle green"><i data-lucide="check"></i></div>
+                <div class="notif-content">
+                    <p>Projeto <em>Atualização ERP</em> marcado como concluído.</p>
+                    <span>Ontem</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

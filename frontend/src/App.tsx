@@ -185,6 +185,7 @@ function App() {
   const [users, setUsers] = useState<User[]>([]);
   const [gestores, setGestores] = useState<Gestor[]>([]);
   const [activeCalendarAnalystId, setActiveCalendarAnalystId] = useState<string | null>(null);
+  const [calendarMonths, setCalendarMonths] = useState<Record<string, { year: number; month: number }>>({});
   
   // Create Modals/Forms State
   const [newProject, setNewProject] = useState({ 
@@ -1042,20 +1043,21 @@ function App() {
 
   const renderAnalystCalendar = (analystId: string) => {
     const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth(); // 0-11
+    const viewState = calendarMonths[analystId] || { year: today.getFullYear(), month: today.getMonth() };
+    const viewYear = viewState.year;
+    const viewMonth = viewState.month;
     
     const monthNames = [
       'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
     ];
 
-    // First day of current month
-    const firstDay = new Date(currentYear, currentMonth, 1);
+    // First day of viewed month
+    const firstDay = new Date(viewYear, viewMonth, 1);
     const startingDayOfWeek = firstDay.getDay(); // 0 (Sunday) to 6 (Saturday)
     
-    // Total days in current month
-    const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+    // Total days in viewed month
+    const totalDays = new Date(viewYear, viewMonth + 1, 0).getDate();
     
     // Generate calendar day items
     const days = [];
@@ -1069,21 +1071,66 @@ function App() {
     for (let d = 1; d <= totalDays; d++) {
       days.push({
         dayNumber: d,
-        date: new Date(currentYear, currentMonth, d)
+        date: new Date(viewYear, viewMonth, d)
       });
     }
 
-    // Weekdays headers
     const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    const handlePrevMonth = () => {
+      let prevMonth = viewMonth - 1;
+      let prevYear = viewYear;
+      if (prevMonth < 0) {
+        prevMonth = 11;
+        prevYear -= 1;
+      }
+      setCalendarMonths({
+        ...calendarMonths,
+        [analystId]: { year: prevYear, month: prevMonth }
+      });
+    };
+
+    const handleNextMonth = () => {
+      let nextMonth = viewMonth + 1;
+      let nextYear = viewYear;
+      if (nextMonth > 11) {
+        nextMonth = 0;
+        nextYear += 1;
+      }
+      setCalendarMonths({
+        ...calendarMonths,
+        [analystId]: { year: nextYear, month: nextMonth }
+      });
+    };
 
     return (
       <div className="calendar-container">
-        <div className="calendar-header">
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--primary)' }}>
-            {monthNames[currentMonth]} de {currentYear}
-          </span>
+        <div className="calendar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button 
+              type="button"
+              onClick={handlePrevMonth}
+              className="btn btn-secondary animate-hover"
+              style={{ width: '28px', height: '28px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+              title="Mês anterior"
+            >
+              ◀
+            </button>
+            <span style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--primary)', minWidth: '120px', textAlign: 'center' }}>
+              {monthNames[viewMonth]} de {viewYear}
+            </span>
+            <button 
+              type="button"
+              onClick={handleNextMonth}
+              className="btn btn-secondary animate-hover"
+              style={{ width: '28px', height: '28px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+              title="Próximo mês"
+            >
+              ▶
+            </button>
+          </div>
           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-            Passe o mouse nos dias com ponto para ver as demandas
+            Passe o mouse nos dias destacados para ver as demandas
           </span>
         </div>
         <div className="calendar-grid">
@@ -1095,15 +1142,14 @@ function App() {
               return <div key={`empty-${index}`} className="calendar-day empty" />;
             }
             
-            // Find tasks active on this date for the analyst
-            const dateStr = d.date.toISOString().split('T')[0];
+            // Format date comparison safely using local values
+            const pad2 = (n: number) => n.toString().padStart(2, '0');
+            const dateStr = `${d.date.getFullYear()}-${pad2(d.date.getMonth() + 1)}-${pad2(d.date.getDate())}`;
+            
             const activeTasksForDay = tasks.filter(t => {
-              // Check if task is assigned to this analyst
               const isAssigned = t.assignees?.some(a => a.id === analystId);
               if (!isAssigned) return false;
               
-              // Check if task is active on this day
-              // Range is from dataInicioProgramada to dataPrevistaFinalizar
               if (!t.dataInicioProgramada) return false;
               const start = t.dataInicioProgramada.substring(0, 10);
               const end = t.dataPrevistaFinalizar ? t.dataPrevistaFinalizar.substring(0, 10) : start;
@@ -1114,11 +1160,11 @@ function App() {
             const hasTasks = activeTasksForDay.length > 0;
             const hasUrgent = activeTasksForDay.some(t => t.isUrgent);
             
-            // Build tooltip title
             const tooltipTitle = hasTasks 
               ? `Demandas:\n` + activeTasksForDay.map(t => {
                   const seq = getTaskSequenceCode(t);
-                  return `${seq ? `[${seq}] ` : ''}${t.title} (${t.status})`;
+                  const projName = projects.find(p => p.id === t.projectId)?.title || 'Demanda Avulsa';
+                  return `${seq ? `[${seq}] ` : ''}${t.title} (${projName} - ${t.status})`;
                 }).join('\n')
               : 'Sem demandas';
 

@@ -1171,9 +1171,10 @@ function App() {
             const tooltipTitle = hasTasks 
               ? `Demandas:\n` + activeTasksForDay.map(t => {
                   const seq = getTaskSequenceCode(t);
-                  const projName = projects.find(p => p.id === t.projectId)?.title || 'Demanda Complexa';
+                  const projName = projects.find(p => p.id === t.projectId)?.title || '';
                   const translatedStatus = statusTranslation[t.status] || t.status;
-                  return `${seq ? `[${seq}] ` : ''}${t.title} (${projName} - ${translatedStatus})`;
+                  const originText = t.projectId ? `Projetos (${projName})` : 'Demandas Complexas';
+                  return `${seq ? `[${seq}] ` : ''}${t.title} (${originText} - ${translatedStatus})`;
                 }).join('\n')
               : 'Sem demandas';
 
@@ -1220,7 +1221,10 @@ function App() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '230px', overflowY: 'auto', paddingRight: '4px' }}>
           {analystTasks.map(t => {
             const seq = getTaskSequenceCode(t);
-            const projName = projects.find(p => p.id === t.projectId)?.title || 'Demanda Complexa';
+            const projName = projects.find(p => p.id === t.projectId)?.title || '';
+            const isProject = !!t.projectId;
+            const originType = isProject ? 'Projetos' : 'Demandas Complexas';
+            const detailText = isProject ? ` (${projName})` : '';
             
             let statusColor = 'var(--text-muted)';
             if (t.status === 'TODO') statusColor = '#9ca3af';
@@ -1247,7 +1251,7 @@ function App() {
                     {seq ? `[${seq}] ` : ''}{t.title}
                   </div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', textAlign: 'left' }}>
-                    Origem: <span style={{ color: t.projectId ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 600 }}>{projName}</span>
+                    Origem: <span style={{ color: isProject ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 600 }}>{originType}{detailText}</span>
                     {t.dataInicioProgramada && (
                       <span> • Prazo: {formatDateString(t.dataInicioProgramada)} a {t.dataPrevistaFinalizar ? formatDateString(t.dataPrevistaFinalizar) : 'Não definido'}</span>
                     )}
@@ -1314,7 +1318,7 @@ function App() {
           {/* Modal Header */}
           <div style={{ paddingRight: '40px', marginBottom: '20px' }}>
             <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
-              {projName} {proj?.categoria && `(${proj.categoria})`}
+              {t.projectId ? `Projetos > ${projName}` : 'Demandas Complexas'} {proj?.categoria && `(${proj.categoria})`}
               {t.subChapter && ` > ${t.subChapter.title}`}
             </span>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', marginTop: '6px', textAlign: 'left' }}>

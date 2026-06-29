@@ -11,14 +11,9 @@ const email_service_1 = require("../services/email.service");
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
 const COMPLEXITY_ERROR_MSG = 'A senha não atende aos requisitos de complexidade: mínimo 8 caracteres, contendo pelo menos uma letra maiúscula, uma letra minúscula, um número e um caractere especial (@$!%*?&#).';
 const register = async (req, res) => {
-    const { name, email, password, role, gestorId, cargo } = req.body;
-    if (!name || !email || !password) {
+    const { name, email, role, gestorId, cargo } = req.body;
+    if (!name || !email) {
         res.status(400).json({ error: 'Preencha todos os campos obrigatórios' });
-        return;
-    }
-    // Validate complexity
-    if (!PASSWORD_REGEX.test(password)) {
-        res.status(400).json({ error: COMPLEXITY_ERROR_MSG });
         return;
     }
     const existingUser = await prisma_1.default.user.findUnique({ where: { email: email.toLowerCase() } });
@@ -26,7 +21,8 @@ const register = async (req, res) => {
         res.status(400).json({ error: 'E-mail já está em uso' });
         return;
     }
-    const hashedPassword = await bcryptjs_1.default.hash(password, 10);
+    const defaultPassword = '123';
+    const hashedPassword = await bcryptjs_1.default.hash(defaultPassword, 10);
     const user = await prisma_1.default.user.create({
         data: {
             name: name.toUpperCase(),
@@ -38,7 +34,7 @@ const register = async (req, res) => {
             passwordNeedsReset: true // Force reset on first access
         }
     });
-    email_service_1.EmailService.sendUserWelcomeEmail(user.id, password).catch(err => console.error('[EmailService Error]:', err));
+    email_service_1.EmailService.sendUserWelcomeEmail(user.id, defaultPassword).catch(err => console.error('[EmailService Error]:', err));
     res.status(201).json({ id: user.id, name: user.name, email: user.email, role: user.role });
 };
 exports.register = register;

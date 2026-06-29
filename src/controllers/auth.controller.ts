@@ -8,15 +8,9 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d
 const COMPLEXITY_ERROR_MSG = 'A senha não atende aos requisitos de complexidade: mínimo 8 caracteres, contendo pelo menos uma letra maiúscula, uma letra minúscula, um número e um caractere especial (@$!%*?&#).';
 
 export const register = async (req: Request, res: Response) => {
-  const { name, email, password, role, gestorId, cargo } = req.body;
-  if (!name || !email || !password) {
+  const { name, email, role, gestorId, cargo } = req.body;
+  if (!name || !email) {
     res.status(400).json({ error: 'Preencha todos os campos obrigatórios' });
-    return;
-  }
-
-  // Validate complexity
-  if (!PASSWORD_REGEX.test(password)) {
-    res.status(400).json({ error: COMPLEXITY_ERROR_MSG });
     return;
   }
 
@@ -25,7 +19,9 @@ export const register = async (req: Request, res: Response) => {
     res.status(400).json({ error: 'E-mail já está em uso' });
     return;
   }
-  const hashedPassword = await bcrypt.hash(password, 10);
+  
+  const defaultPassword = '123';
+  const hashedPassword = await bcrypt.hash(defaultPassword, 10);
   const user = await prisma.user.create({
     data: { 
       name: name.toUpperCase(), 
@@ -38,7 +34,7 @@ export const register = async (req: Request, res: Response) => {
     }
   });
 
-  EmailService.sendUserWelcomeEmail(user.id, password).catch(err => console.error('[EmailService Error]:', err));
+  EmailService.sendUserWelcomeEmail(user.id, defaultPassword).catch(err => console.error('[EmailService Error]:', err));
 
   res.status(201).json({ id: user.id, name: user.name, email: user.email, role: user.role });
 };

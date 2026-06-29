@@ -6,7 +6,7 @@ export const getGestores = async (req: Request, res: Response) => {
   try {
     const gestores = await prisma.user.findMany({
       where: {
-        role: { in: ['MANAGER', 'SUPER_ADMIN'] }
+        role: 'MANAGER'
       },
       include: {
         _count: {

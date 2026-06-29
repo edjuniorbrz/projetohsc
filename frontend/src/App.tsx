@@ -1013,9 +1013,19 @@ function App() {
         <div className="password-reset-card">
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <h2 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 800 }}>Redefinição Obrigatória</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px', marginBottom: '12px' }}>
               Para garantir a segurança do sistema, altere a sua senha inicial de acesso.
             </p>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', marginBottom: '16px', lineHeight: '1.4' }}>
+              <strong>Requisitos obrigatórios para a nova senha:</strong>
+              <ul style={{ paddingLeft: '16px', margin: '4px 0 0 0', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <li>Mínimo de 8 caracteres</li>
+                <li>Pelo menos uma letra maiúscula</li>
+                <li>Pelo menos uma letra minúscula</li>
+                <li>Pelo menos um número</li>
+                <li>Pelo menos um caractere especial (Ex: @, $, !, %, *, ?, &, #)</li>
+              </ul>
+            </div>
           </div>
 
           {passwordResetError && (
@@ -2930,18 +2940,23 @@ function App() {
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label" htmlFor="userPassword">Senha {editingUser && '(Deixe em branco para manter)'}</label>
-                <input 
-                  id="userPassword"
-                  name="userPassword"
-                  type="password" 
-                  className="form-input" 
-                  value={userForm.password}
-                  onChange={e => setUserForm({ ...userForm, password: e.target.value })}
-                  required={!editingUser}
-                />
-              </div>
+              {editingUser ? (
+                <div className="form-group">
+                  <label className="form-label" htmlFor="userPassword">Senha (Deixe em branco para manter)</label>
+                  <input 
+                    id="userPassword"
+                    name="userPassword"
+                    type="password" 
+                    className="form-input" 
+                    value={userForm.password}
+                    onChange={e => setUserForm({ ...userForm, password: e.target.value })}
+                  />
+                </div>
+              ) : (
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', marginBottom: '16px' }}>
+                  💡 <strong>Senha Temporária:</strong> A senha temporária padrão <code>123</code> será gerada para este usuário. Ele será obrigado a redefinir para uma senha forte no primeiro acesso.
+                </div>
+              )}
 
               <div className="form-group">
                 <label className="form-label" htmlFor="userCargo">Cargo / Função</label>

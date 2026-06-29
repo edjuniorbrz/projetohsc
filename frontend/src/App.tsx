@@ -184,6 +184,7 @@ function App() {
   const [analysts, setAnalysts] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [gestores, setGestores] = useState<Gestor[]>([]);
+  const [activeCalendarAnalystId, setActiveCalendarAnalystId] = useState<string | null>(null);
   
   // Create Modals/Forms State
   const [newProject, setNewProject] = useState({ 
@@ -1039,6 +1040,110 @@ function App() {
     return `${subIdx + 1}.${taskIdx + 1}`;
   };
 
+  const renderAnalystCalendar = (analystId: string) => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth(); // 0-11
+    
+    const monthNames = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    // First day of current month
+    const firstDay = new Date(currentYear, currentMonth, 1);
+    const startingDayOfWeek = firstDay.getDay(); // 0 (Sunday) to 6 (Saturday)
+    
+    // Total days in current month
+    const totalDays = new Date(currentYear, currentMonth + 1, 0).getDate();
+    
+    // Generate calendar day items
+    const days = [];
+    
+    // Blank days before the first day of the month
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push({ dayNumber: null, date: null });
+    }
+    
+    // Actual days of the month
+    for (let d = 1; d <= totalDays; d++) {
+      days.push({
+        dayNumber: d,
+        date: new Date(currentYear, currentMonth, d)
+      });
+    }
+
+    // Weekdays headers
+    const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    return (
+      <div className="calendar-container">
+        <div className="calendar-header">
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--primary)' }}>
+            {monthNames[currentMonth]} de {currentYear}
+          </span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+            Passe o mouse nos dias com ponto para ver as demandas
+          </span>
+        </div>
+        <div className="calendar-grid">
+          {weekdays.map(wd => (
+            <div key={wd} className="calendar-weekday">{wd}</div>
+          ))}
+          {days.map((d, index) => {
+            if (d.dayNumber === null || !d.date) {
+              return <div key={`empty-${index}`} className="calendar-day empty" />;
+            }
+            
+            // Find tasks active on this date for the analyst
+            const dateStr = d.date.toISOString().split('T')[0];
+            const activeTasksForDay = tasks.filter(t => {
+              // Check if task is assigned to this analyst
+              const isAssigned = t.assignees?.some(a => a.id === analystId);
+              if (!isAssigned) return false;
+              
+              // Check if task is active on this day
+              // Range is from dataInicioProgramada to dataPrevistaFinalizar
+              if (!t.dataInicioProgramada) return false;
+              const start = t.dataInicioProgramada.substring(0, 10);
+              const end = t.dataPrevistaFinalizar ? t.dataPrevistaFinalizar.substring(0, 10) : start;
+              
+              return dateStr >= start && dateStr <= end;
+            });
+
+            const hasTasks = activeTasksForDay.length > 0;
+            const hasUrgent = activeTasksForDay.some(t => t.isUrgent);
+            
+            // Build tooltip title
+            const tooltipTitle = hasTasks 
+              ? `Demandas:\n` + activeTasksForDay.map(t => {
+                  const seq = getTaskSequenceCode(t);
+                  return `${seq ? `[${seq}] ` : ''}${t.title} (${t.status})`;
+                }).join('\n')
+              : 'Sem demandas';
+
+            let dayClass = 'calendar-day';
+            if (hasTasks) {
+              dayClass += hasUrgent ? ' has-urgent-tasks' : ' has-tasks';
+            }
+
+            return (
+              <div 
+                key={`day-${d.dayNumber}`} 
+                className={dayClass}
+                title={tooltipTitle}
+                style={{ cursor: hasTasks ? 'pointer' : 'default' }}
+              >
+                <span className="calendar-day-number">{d.dayNumber}</span>
+                {hasTasks && <div className="calendar-day-dot" />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const formatDateString = (dateStr?: string | null) => {
     if (!dateStr) return 'Não registrado';
     const date = new Date(dateStr);
@@ -1526,21 +1631,34 @@ function App() {
 
                 <div className="card" style={{ marginBottom: '32px' }}>
                   <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>Carga de Trabalho (Por Analista)</h3>
-                  <div className="document-list">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {dashboardData.analystWorkload && dashboardData.analystWorkload.length > 0 ? (
-                      dashboardData.analystWorkload.map(a => (
-                        <div key={a.id} className="document-item animate-hover">
-                          <div>
-                            <div style={{ fontWeight: 600 }}>{a.name}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Analista de TI</div>
+                      dashboardData.analystWorkload.map(a => {
+                        const isCalendarOpen = activeCalendarAnalystId === a.id;
+                        return (
+                          <div key={a.id} className="card" style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div>
+                                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{a.name}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Analista de TI</div>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span className="column-badge" style={{ background: a.taskCount > 3 ? 'var(--danger)' : 'rgba(255,255,255,0.08)', margin: 0 }}>
+                                  {a.taskCount} tarefas designadas
+                                </span>
+                                <button 
+                                  className="btn btn-secondary animate-hover"
+                                  onClick={() => setActiveCalendarAnalystId(isCalendarOpen ? null : a.id)}
+                                  style={{ width: 'auto', padding: '6px 12px', fontSize: '0.75rem', height: 'auto', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                >
+                                  <Calendar size={14} /> {isCalendarOpen ? 'Ocultar Calendário' : 'Ver Calendário'}
+                                </button>
+                              </div>
+                            </div>
+                            {isCalendarOpen && renderAnalystCalendar(a.id)}
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span className="column-badge" style={{ background: a.taskCount > 3 ? 'var(--danger)' : 'rgba(255,255,255,0.08)' }}>
-                              {a.taskCount} tarefas designadas
-                            </span>
-                          </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <p style={{ color: 'var(--text-muted)' }}>Nenhum analista cadastrado no sistema ainda.</p>
                     )}

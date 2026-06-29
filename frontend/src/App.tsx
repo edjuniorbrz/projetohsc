@@ -1876,7 +1876,7 @@ function App() {
                 </button>
               )}
             </div>
-  \n            {/* BANCO DE AÇÕES CADASTRADAS (TABELA) */}
+            {/* BANCO DE AÇÕES CADASTRADAS (TABELA) */}
             <div className="card">
               <h3 style={{ marginBottom: '20px', fontWeight: 600 }}>Banco de Ações Planejadas</h3>
               <div style={{ overflowX: 'auto' }}>
@@ -2050,7 +2050,7 @@ function App() {
                 </button>
               )}
             </div>
-  \n              <div className="kanban-board">
+              <div className="kanban-board">
                 {/* COLUNA: A FAZER */}
                 <div 
                   className="kanban-column"

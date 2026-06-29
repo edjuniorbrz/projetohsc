@@ -54,6 +54,9 @@ model Project {
   dataInicio  DateTime?
   dataFim     DateTime?
   
+  // Classification
+  categoria   String?
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
 
 export const createProject = async (req: Request, res: Response) => {
-  const { title, description, gestorId, dataInicio, dataFim, responsibleIds } = req.body;
+  const { title, description, gestorId, dataInicio, dataFim, responsibleIds, categoria } = req.body;
   const ownerId = req.user.id;
 
   if (!title) {
@@ -18,6 +18,7 @@ export const createProject = async (req: Request, res: Response) => {
       gestorId: gestorId || null,
       dataInicio: dataInicio ? new Date(dataInicio) : null,
       dataFim: dataFim ? new Date(dataFim) : null,
+      categoria: categoria || null,
       responsibles: responsibleIds && Array.isArray(responsibleIds) ? {
         connect: responsibleIds.map((id: string) => ({ id }))
       } : undefined
@@ -60,7 +61,7 @@ export const listProjects = async (req: Request, res: Response) => {
 
 export const updateProject = async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { title, description, gestorId, dataInicio, dataFim, responsibleIds } = req.body;
+  const { title, description, gestorId, dataInicio, dataFim, responsibleIds, categoria } = req.body;
 
   try {
     if (!title) {
@@ -76,6 +77,7 @@ export const updateProject = async (req: Request, res: Response) => {
         gestorId: gestorId || null,
         dataInicio: dataInicio ? new Date(dataInicio) : null,
         dataFim: dataFim ? new Date(dataFim) : null,
+        categoria: categoria || null,
         responsibles: responsibleIds && Array.isArray(responsibleIds) ? {
           set: responsibleIds.map((id: string) => ({ id }))
         } : { set: [] }

@@ -59,6 +59,7 @@ interface Project {
   subChapters?: SubChapter[];
   dataInicio?: string | null;
   dataFim?: string | null;
+  categoria?: string | null;
 }
 
 interface TaskComment {
@@ -191,7 +192,8 @@ function App() {
     gestorId: '',
     dataInicio: '',
     dataFim: '',
-    responsibleIds: [] as string[]
+    responsibleIds: [] as string[],
+    categoria: ''
   });
 
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
@@ -203,7 +205,8 @@ function App() {
     gestorId: '',
     dataInicio: '',
     dataFim: '',
-    responsibleIds: [] as string[]
+    responsibleIds: [] as string[],
+    categoria: ''
   });
 
   const [newSubChapterTitle, setNewSubChapterTitle] = useState<{ [projectId: string]: string }>({});
@@ -682,7 +685,7 @@ function App() {
     try {
       await api.post('/projects', newProject);
       addNotification(`Novo projeto criado: "${newProject.title}"`, 'success');
-      setNewProject({ title: '', description: '', gestorId: '', dataInicio: '', dataFim: '', responsibleIds: [] });
+      setNewProject({ title: '', description: '', gestorId: '', dataInicio: '', dataFim: '', responsibleIds: [], categoria: '' });
       fetchProjects();
       fetchDashboard();
       showToast('Projeto criado com sucesso!');
@@ -699,7 +702,8 @@ function App() {
       gestorId: proj.gestorId || '',
       dataInicio: proj.dataInicio ? proj.dataInicio.substring(0, 10) : '',
       dataFim: proj.dataFim ? proj.dataFim.substring(0, 10) : '',
-      responsibleIds: proj.responsibles ? proj.responsibles.map(r => r.id) : []
+      responsibleIds: proj.responsibles ? proj.responsibles.map(r => r.id) : [],
+      categoria: proj.categoria || ''
     });
     setIsEditProjectModalOpen(true);
   };
@@ -969,6 +973,47 @@ function App() {
     } catch (err) {
       showToast('Erro ao realizar o download do anexo.');
     }
+  };
+
+  const renderProjectCategoryBadge = (categoria?: string | null) => {
+    if (!categoria) return null;
+    let bg = 'rgba(255,255,255,0.05)';
+    let color = 'var(--text-muted)';
+    let border = '1px solid var(--border-color)';
+    
+    if (categoria === 'Jornada Digital') {
+      bg = 'rgba(14, 165, 233, 0.08)';
+      color = 'var(--primary)';
+      border = '1px solid rgba(14, 165, 233, 0.2)';
+    } else if (categoria === 'Oriunda do Corporativo') {
+      bg = 'rgba(16, 185, 129, 0.08)';
+      color = 'var(--accent)';
+      border = '1px solid rgba(16, 185, 129, 0.2)';
+    } else if (categoria === 'HSC') {
+      bg = 'rgba(245, 158, 11, 0.08)';
+      color = 'var(--warning)';
+      border = '1px solid rgba(245, 158, 11, 0.2)';
+    }
+
+    return (
+      <span style={{ 
+        display: 'inline-flex', 
+        alignItems: 'center', 
+        padding: '3px 10px', 
+        borderRadius: '6px', 
+        fontSize: '0.7rem', 
+        fontWeight: 700, 
+        textTransform: 'uppercase', 
+        letterSpacing: '0.5px',
+        backgroundColor: bg,
+        color: color,
+        border: border,
+        marginLeft: '10px',
+        verticalAlign: 'middle'
+      }}>
+        {categoria}
+      </span>
+    );
   };
 
   const formatDateString = (dateStr?: string | null) => {
@@ -2084,9 +2129,19 @@ function App() {
                               const proj = projects.find(p => p.id === t.projectId);
                               if (!proj) return 'DEMANDA AVULSA';
                               if (t.subChapter) {
-                                return `${proj.title} > ${t.subChapter.title}`;
+                                return (
+                                  <span>
+                                    {proj.title} {' > '} {t.subChapter.title}
+                                    {proj.categoria && <span style={{ opacity: 0.7, fontSize: '0.65rem', color: 'var(--primary)', marginLeft: '6px', fontWeight: 700 }}>({proj.categoria.toUpperCase()})</span>}
+                                  </span>
+                                );
                               }
-                              return proj.title;
+                              return (
+                                <span>
+                                  {proj.title}
+                                  {proj.categoria && <span style={{ opacity: 0.7, fontSize: '0.65rem', color: 'var(--primary)', marginLeft: '6px', fontWeight: 700 }}>({proj.categoria.toUpperCase()})</span>}
+                                </span>
+                              );
                             })()}
                           </span>
                           <div style={{ display: 'flex', gap: '4px' }}>
@@ -2586,6 +2641,23 @@ function App() {
                     />
                   </div>
 
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="projectCategory">Origem / Classificação da Demanda</label>
+                    <select
+                      id="projectCategory"
+                      name="projectCategory"
+                      className="form-input"
+                      value={newProject.categoria}
+                      onChange={e => setNewProject({ ...newProject, categoria: e.target.value })}
+                      required
+                    >
+                      <option value="">Selecione a Origem...</option>
+                      <option value="Jornada Digital">Jornada Digital</option>
+                      <option value="Oriunda do Corporativo">Oriunda do Corporativo</option>
+                      <option value="HSC">HSC</option>
+                    </select>
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
                     <div className="form-group" style={{ margin: 0 }}>
                       <label className="form-label">Data de Início do Projeto</label>
@@ -2652,7 +2724,7 @@ function App() {
                     <div key={p.id} className="document-item animate-hover" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '16px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                         <div style={{ flexGrow: 1 }}>
-                          <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff' }}>{p.title}</div>
+                          <div style={{ fontWeight: 700, fontSize: '1.05rem', color: '#fff', display: 'flex', alignItems: 'center' }}>{p.title} {renderProjectCategoryBadge(p.categoria)}</div>
                           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                             {p.description || 'Sem descrição.'}
                           </div>
@@ -3176,6 +3248,21 @@ function App() {
                   value={editProjectForm.description}
                   onChange={e => setEditProjectForm({ ...editProjectForm, description: e.target.value.toUpperCase() })}
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Origem / Classificação da Demanda</label>
+                <select
+                  className="form-input"
+                  value={editProjectForm.categoria}
+                  onChange={e => setEditProjectForm({ ...editProjectForm, categoria: e.target.value })}
+                  required
+                >
+                  <option value="">Selecione a Origem...</option>
+                  <option value="Jornada Digital">Jornada Digital</option>
+                  <option value="Oriunda do Corporativo">Oriunda do Corporativo</option>
+                  <option value="HSC">HSC</option>
+                </select>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>

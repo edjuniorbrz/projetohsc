@@ -1160,11 +1160,18 @@ function App() {
             const hasTasks = activeTasksForDay.length > 0;
             const hasUrgent = activeTasksForDay.some(t => t.isUrgent);
             
+            const statusTranslation = {
+              TODO: 'A Fazer',
+              DOING: 'Em Progresso',
+              BLOCKED: 'Bloqueado',
+              DONE: 'Concluído'
+            };
             const tooltipTitle = hasTasks 
               ? `Demandas:\n` + activeTasksForDay.map(t => {
                   const seq = getTaskSequenceCode(t);
                   const projName = projects.find(p => p.id === t.projectId)?.title || 'Demanda Avulsa';
-                  return `${seq ? `[${seq}] ` : ''}${t.title} (${projName} - ${t.status})`;
+                  const translatedStatus = statusTranslation[t.status] || t.status;
+                  return `${seq ? `[${seq}] ` : ''}${t.title} (${projName} - ${translatedStatus})`;
                 }).join('\n')
               : 'Sem demandas';
 
@@ -1251,7 +1258,7 @@ function App() {
                     </span>
                   )}
                   <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.05)', color: statusColor, padding: '2px 6px', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.05)' }}>
-                    {t.status}
+                    {t.status === 'TODO' ? 'A Fazer' : t.status === 'DOING' ? 'Em Progresso' : t.status === 'BLOCKED' ? 'Bloqueado' : 'Concluído'}
                   </span>
                 </div>
               </div>

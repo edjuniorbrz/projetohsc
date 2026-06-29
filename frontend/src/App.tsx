@@ -1811,9 +1811,14 @@ function App() {
                         required
                       >
                         <option value="">Selecione um sub-capítulo...</option>
-                        {newTask.projectId && projects.find(p => p.id === newTask.projectId)?.subChapters?.map(sub => (
-                          <option key={sub.id} value={sub.id}>{sub.title}</option>
-                        ))}
+                        {newTask.projectId && (() => {
+                          const proj = projects.find(p => p.id === newTask.projectId);
+                          if (!proj || !proj.subChapters) return null;
+                          const sortedSubs = [...proj.subChapters].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+                          return sortedSubs.map((sub, idx) => (
+                            <option key={sub.id} value={sub.id}>{idx + 1}. {sub.title}</option>
+                          ));
+                        })()}
                       </select>
                     </div>
 

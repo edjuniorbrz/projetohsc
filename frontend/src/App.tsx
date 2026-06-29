@@ -16,7 +16,8 @@ import {
   Trash2,
   X,
   UserCheck,
-  Info
+  Info,
+  Filter
 } from 'lucide-react';
 
 interface User {
@@ -129,6 +130,17 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'action' | 'kanban' | 'users' | 'gestores'>('dashboard');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
+  // Custom states for security & filters
+  const [lgpdConsent, setLgpdConsent] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [passwordResetForm, setPasswordResetForm] = useState({ newPassword: '', confirmPassword: '' });
+  const [passwordResetError, setPasswordResetError] = useState('');
+
+  const [filterProject, setFilterProject] = useState('');
+  const [filterAnalyst, setFilterAnalyst] = useState('');
+  const [filterUrgent, setFilterUrgent] = useState('ALL');
+  const [filterStatus, setFilterStatus] = useState('ALL');
   
   // Auth Form State
   const [authForm, setAuthForm] = useState({
@@ -335,7 +347,7 @@ function App() {
               const form = e.currentTarget;
               const textInput = form.elements.namedItem('commentText') as HTMLTextAreaElement;
               const fileInput = form.elements.namedItem('commentFile') as HTMLInputElement;
-              handleAddComment(t.id, textInput.value, fileInput.files?.[0]);
+              handleAddComment(t.id, textInput.value, fileInput.files);
               form.reset();
             }}
             style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}
@@ -354,11 +366,22 @@ function App() {
                 <input
                   type="file"
                   name="commentFile"
+                  multiple
                   style={{ display: 'none' }}
                   onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      showToast(`Arquivo "${file.name}" selecionado`);
+                    const files = e.target.files;
+                    if (files && files.length > 0) {
+                      const allowedExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'docx', 'xlsx', 'zip'];
+                      for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const ext = file.name.split('.').pop()?.toLowerCase();
+                        if (!ext || !allowedExtensions.includes(ext)) {
+                          showToast(`Formato de arquivo não permitido: .${ext}. Apenas PDF, Imagens (PNG, JPG), Word/Excel e ZIP.`);
+                          e.target.value = ''; // Clear selected
+                          return;
+                        }
+                      }
+                      showToast(`${files.length} arquivo(s) selecionado(s)`);
                     }
                   }}
                 />
@@ -459,20 +482,57 @@ function App() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!lgpdConsent) {
+      showToast('Você precisa aceitar os termos de consentimento de dados (LGPD) para prosseguir.');
+      return;
+    }
     try {
       const response = await api.post('/auth/login', {
         email: authForm.email,
         password: authForm.password
       });
-      const { token, user } = response.data;
+      const { token, user, needsPasswordReset } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       setCurrentUser(user);
-      setIsAuthenticated(true);
-      showToast(`Bem-vindo de volta, ${user.name}!`);
-      playNotificationSound();
+
+      if (needsPasswordReset) {
+        setShowPasswordReset(true);
+        showToast('Aviso: É necessário redefinir a sua senha inicial.');
+      } else {
+        setIsAuthenticated(true);
+        showToast(`Bem-vindo de volta, ${user.name}!`);
+        playNotificationSound();
+      }
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Erro ao realizar login');
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordResetForm.newPassword !== passwordResetForm.confirmPassword) {
+      setPasswordResetError('As senhas não coincidem.');
+      return;
+    }
+    
+    // Front-end password complexity check
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+    if (!passwordRegex.test(passwordResetForm.newPassword)) {
+      setPasswordResetError('A senha deve conter no mínimo 8 caracteres, contendo pelo menos uma letra máuscula, uma letra minúscula, um número e um caractere especial (@$!%*?&#).');
+      return;
+    }
+
+    try {
+      await api.post('/auth/reset-password', {
+        newPassword: passwordResetForm.newPassword
+      });
+      showToast('Senha redefinida com sucesso! Acesso liberado.');
+      setShowPasswordReset(false);
+      setIsAuthenticated(true);
+      playNotificationSound();
+    } catch (err: any) {
+      setPasswordResetError(err.response?.data?.error || 'Erro ao redefinir a senha.');
     }
   };
 
@@ -854,21 +914,33 @@ function App() {
     }
   };
 
-  const handleAddComment = async (taskId: string, text: string, file?: File) => {
+  const handleAddComment = async (taskId: string, text: string, files?: FileList | null) => {
     try {
-      const formData = new FormData();
-      formData.append('text', text);
-      if (file) {
-        formData.append('file', file);
+      if (!files || files.length === 0) {
+        const formData = new FormData();
+        formData.append('text', text);
+        await api.post(`/tasks/${taskId}/comments`, formData);
+      } else {
+        // Upload first file with text
+        const formData = new FormData();
+        formData.append('text', text || `Anexo: ${files[0].name}`);
+        formData.append('file', files[0]);
+        await api.post(`/tasks/${taskId}/comments`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        // Upload remaining files as separate comments
+        for (let i = 1; i < files.length; i++) {
+          const extraFormData = new FormData();
+          extraFormData.append('text', `Anexo adicional: ${files[i].name}`);
+          extraFormData.append('file', files[i]);
+          await api.post(`/tasks/${taskId}/comments`, extraFormData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        }
       }
       
-      await api.post(`/tasks/${taskId}/comments`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      showToast('Observação registrada com sucesso!');
+      showToast('Observação/Anexos registrados com sucesso!');
       fetchTasks();
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Erro ao registrar observação.');
@@ -915,6 +987,79 @@ function App() {
     return limitDate < today;
   };
 
+  const filteredTasks = tasks.filter(t => {
+    if (filterProject && t.projectId !== filterProject) return false;
+    if (filterAnalyst) {
+      const isAssigned = t.assignees?.some(a => a.id === filterAnalyst);
+      if (!isAssigned) return false;
+    }
+    if (filterUrgent === 'URGENT' && !t.isUrgent) return false;
+    if (filterUrgent === 'NORMAL' && t.isUrgent) return false;
+    
+    if (filterStatus !== 'ALL') {
+      if (filterStatus === 'OVERDUE') {
+        return checkIsOverdue(t);
+      } else {
+        return t.status === filterStatus;
+      }
+    }
+    return true;
+  });
+
+  
+  if (isAuthenticated && showPasswordReset) {
+    return (
+      <div className="password-reset-overlay">
+        <div className="password-reset-card">
+          <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+            <h2 style={{ color: '#fff', fontSize: '1.5rem', fontWeight: 800 }}>Redefinição Obrigatória</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '4px' }}>
+              Para garantir a segurança do sistema, altere a sua senha inicial de acesso.
+            </p>
+          </div>
+
+          {passwordResetError && (
+            <div style={{ color: 'var(--danger)', fontSize: '0.8rem', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '10px', borderRadius: '6px', marginBottom: '16px' }}>
+              {passwordResetError}
+            </div>
+          )}
+
+          <form onSubmit={handlePasswordReset} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label" htmlFor="newPassword">Nova Senha</label>
+              <input 
+                id="newPassword"
+                type="password"
+                className="form-input"
+                placeholder="Mínimo 8 caracteres, número, maiúscula e especial"
+                value={passwordResetForm.newPassword}
+                onChange={e => setPasswordResetForm({ ...passwordResetForm, newPassword: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="form-group" style={{ margin: 0 }}>
+              <label className="form-label" htmlFor="confirmPassword">Confirmar Nova Senha</label>
+              <input 
+                id="confirmPassword"
+                type="password"
+                className="form-input"
+                placeholder="Repita a nova senha"
+                value={passwordResetForm.confirmPassword}
+                onChange={e => setPasswordResetForm({ ...passwordResetForm, confirmPassword: e.target.value })}
+                required
+              />
+            </div>
+
+            <button type="submit" className="btn btn-primary" style={{ marginTop: '8px' }}>
+              Salvar Nova Senha
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="auth-container">
@@ -954,7 +1099,23 @@ function App() {
               />
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ marginTop: '20px' }}>
+            
+            <div className="form-group" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '16px' }}>
+              <input 
+                id="lgpdConsent"
+                name="lgpdConsent"
+                type="checkbox" 
+                checked={lgpdConsent}
+                onChange={e => setLgpdConsent(e.target.checked)}
+                required
+                style={{ marginTop: '4px', width: '16px', height: '16px', cursor: 'pointer' }}
+              />
+              <label htmlFor="lgpdConsent" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4', cursor: 'pointer', userSelect: 'none' }}>
+                Declaro que li e concordo com os termos de consentimento e privacidade de dados (LGPD) para acesso ao portal corporativo.
+              </label>
+            </div>
+
+            <button type="submit" className="btn btn-primary" style={{ marginTop: '20px' }} disabled={!lgpdConsent}>
               Entrar no Sistema
             </button>
           </form>
@@ -1154,6 +1315,64 @@ function App() {
                   </div>
                 </div>
 
+
+                {/* SITUACAO GERAL DAS DEMANDAS - VISUAL BREAKDOWN */}
+                <div style={{ marginBottom: '32px' }}>
+                  <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>Situação Geral das Demandas</h3>
+                  <div className="status-breakdown-grid">
+                    <div className="status-card">
+                      <div className="status-card-label" style={{ color: 'var(--text-muted)' }}>A Fazer</div>
+                      <div className="status-card-value" style={{ color: '#9ca3af' }}>
+                        {tasks.filter(t => t.status === 'TODO').length}
+                      </div>
+                      <div className="status-progress-bg">
+                        <div className="status-progress-bar" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === 'TODO').length / tasks.length) * 100 : 0}%`, background: '#9ca3af' }}></div>
+                      </div>
+                    </div>
+
+                    <div className="status-card">
+                      <div className="status-card-label" style={{ color: 'var(--warning)' }}>Em Progresso</div>
+                      <div className="status-card-value" style={{ color: 'var(--warning)' }}>
+                        {tasks.filter(t => t.status === 'DOING').length}
+                      </div>
+                      <div className="status-progress-bg">
+                        <div className="status-progress-bar" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === 'DOING').length / tasks.length) * 100 : 0}%`, background: 'var(--warning)' }}></div>
+                      </div>
+                    </div>
+
+                    <div className="status-card">
+                      <div className="status-card-label" style={{ color: 'var(--danger)' }}>Bloqueado</div>
+                      <div className="status-card-value" style={{ color: 'var(--danger)' }}>
+                        {tasks.filter(t => t.status === 'BLOCKED').length}
+                      </div>
+                      <div className="status-progress-bg">
+                        <div className="status-progress-bar" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === 'BLOCKED').length / tasks.length) * 100 : 0}%`, background: 'var(--danger)' }}></div>
+                      </div>
+                    </div>
+
+                    <div className="status-card">
+                      <div className="status-card-label" style={{ color: 'var(--accent)' }}>Concluído</div>
+                      <div className="status-card-value" style={{ color: 'var(--accent)' }}>
+                        {tasks.filter(t => t.status === 'DONE').length}
+                      </div>
+                      <div className="status-progress-bg">
+                        <div className="status-progress-bar" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === 'DONE').length / tasks.length) * 100 : 0}%`, background: 'var(--accent)' }}></div>
+                      </div>
+                    </div>
+
+                    <div className="status-card">
+                      <div className="status-card-label" style={{ color: '#f43f5e' }}>Atrasado</div>
+                      <div className="status-card-value" style={{ color: '#f43f5e' }}>
+                        {tasks.filter(t => checkIsOverdue(t)).length}
+                      </div>
+                      <div className="status-progress-bg">
+                        <div className="status-progress-bar" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => checkIsOverdue(t)).length / tasks.length) * 100 : 0}%`, background: '#f43f5e' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+  
+
                 {/* GANTT TIMELINE CHART */}
                 {projects.length > 0 && (
                   <div className="card" style={{ marginBottom: '32px' }}>
@@ -1266,6 +1485,64 @@ function App() {
                     <div className="kpi-value">{dashboardData?.kpis?.done || 0}</div>
                   </div>
                 </div>
+
+
+                {/* SITUACAO GERAL DAS DEMANDAS - VISUAL BREAKDOWN */}
+                <div style={{ marginBottom: '32px' }}>
+                  <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>Situação Geral das Demandas</h3>
+                  <div className="status-breakdown-grid">
+                    <div className="status-card">
+                      <div className="status-card-label" style={{ color: 'var(--text-muted)' }}>A Fazer</div>
+                      <div className="status-card-value" style={{ color: '#9ca3af' }}>
+                        {tasks.filter(t => t.status === 'TODO').length}
+                      </div>
+                      <div className="status-progress-bg">
+                        <div className="status-progress-bar" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === 'TODO').length / tasks.length) * 100 : 0}%`, background: '#9ca3af' }}></div>
+                      </div>
+                    </div>
+
+                    <div className="status-card">
+                      <div className="status-card-label" style={{ color: 'var(--warning)' }}>Em Progresso</div>
+                      <div className="status-card-value" style={{ color: 'var(--warning)' }}>
+                        {tasks.filter(t => t.status === 'DOING').length}
+                      </div>
+                      <div className="status-progress-bg">
+                        <div className="status-progress-bar" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === 'DOING').length / tasks.length) * 100 : 0}%`, background: 'var(--warning)' }}></div>
+                      </div>
+                    </div>
+
+                    <div className="status-card">
+                      <div className="status-card-label" style={{ color: 'var(--danger)' }}>Bloqueado</div>
+                      <div className="status-card-value" style={{ color: 'var(--danger)' }}>
+                        {tasks.filter(t => t.status === 'BLOCKED').length}
+                      </div>
+                      <div className="status-progress-bg">
+                        <div className="status-progress-bar" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === 'BLOCKED').length / tasks.length) * 100 : 0}%`, background: 'var(--danger)' }}></div>
+                      </div>
+                    </div>
+
+                    <div className="status-card">
+                      <div className="status-card-label" style={{ color: 'var(--accent)' }}>Concluído</div>
+                      <div className="status-card-value" style={{ color: 'var(--accent)' }}>
+                        {tasks.filter(t => t.status === 'DONE').length}
+                      </div>
+                      <div className="status-progress-bg">
+                        <div className="status-progress-bar" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => t.status === 'DONE').length / tasks.length) * 100 : 0}%`, background: 'var(--accent)' }}></div>
+                      </div>
+                    </div>
+
+                    <div className="status-card">
+                      <div className="status-card-label" style={{ color: '#f43f5e' }}>Atrasado</div>
+                      <div className="status-card-value" style={{ color: '#f43f5e' }}>
+                        {tasks.filter(t => checkIsOverdue(t)).length}
+                      </div>
+                      <div className="status-progress-bg">
+                        <div className="status-progress-bar" style={{ width: `${tasks.length > 0 ? (tasks.filter(t => checkIsOverdue(t)).length / tasks.length) * 100 : 0}%`, background: '#f43f5e' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+  
 
                 <div className="micro-dashboard-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
                   <div className="card">
@@ -1510,7 +1787,86 @@ function App() {
               </div>
             )}
 
-            {/* BANCO DE AÇÕES CADASTRADAS (TABELA) */}
+            
+            {/* FILTER PANEL */}
+            <div className="card" style={{ marginBottom: '24px', padding: '16px', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '150px' }}>
+                <Filter size={18} /> Filtrar Demandas:
+              </div>
+              
+              <div className="form-group" style={{ margin: 0, flex: '1 1 200px' }}>
+                <select 
+                  className="form-input" 
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  value={filterProject}
+                  onChange={e => setFilterProject(e.target.value)}
+                >
+                  <option value="">Todos os Projetos</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group" style={{ margin: 0, flex: '1 1 200px' }}>
+                <select 
+                  className="form-input" 
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  value={filterAnalyst}
+                  onChange={e => setFilterAnalyst(e.target.value)}
+                >
+                  <option value="">Todos os Executores</option>
+                  {users.filter(u => u.role === 'ANALYST').map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group" style={{ margin: 0, flex: '1 1 150px' }}>
+                <select 
+                  className="form-input" 
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  value={filterUrgent}
+                  onChange={e => setFilterUrgent(e.target.value)}
+                >
+                  <option value="ALL">Qualquer Urgência</option>
+                  <option value="URGENT">Apenas Urgentes 🚨</option>
+                  <option value="NORMAL">Apenas Normais</option>
+                </select>
+              </div>
+
+              <div className="form-group" style={{ margin: 0, flex: '1 1 150px' }}>
+                <select 
+                  className="form-input" 
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  value={filterStatus}
+                  onChange={e => setFilterStatus(e.target.value)}
+                >
+                  <option value="ALL">Qualquer Situação</option>
+                  <option value="TODO">A Fazer</option>
+                  <option value="DOING">Em Progresso</option>
+                  <option value="BLOCKED">Bloqueado</option>
+                  <option value="DONE">Concluído</option>
+                  <option value="OVERDUE">Atrasado ⚠️</option>
+                </select>
+              </div>
+
+              {(filterProject || filterAnalyst || filterUrgent !== 'ALL' || filterStatus !== 'ALL') && (
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ width: 'auto', padding: '8px 16px', margin: 0, fontSize: '0.85rem' }}
+                  onClick={() => {
+                    setFilterProject('');
+                    setFilterAnalyst('');
+                    setFilterUrgent('ALL');
+                    setFilterStatus('ALL');
+                  }}
+                >
+                  Limpar Filtros
+                </button>
+              )}
+            </div>
+  \n            {/* BANCO DE AÇÕES CADASTRADAS (TABELA) */}
             <div className="card">
               <h3 style={{ marginBottom: '20px', fontWeight: 600 }}>Banco de Ações Planejadas</h3>
               <div style={{ overflowX: 'auto' }}>
@@ -1529,7 +1885,7 @@ function App() {
                     </tr>
                   </thead>
                   <tbody>
-                    {tasks.map(t => (
+                    {filteredTasks.map(t => (
                       <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                         <td style={{ padding: '16px', fontWeight: 700 }}>
                           <div>{t.title}</div>
@@ -1594,7 +1950,7 @@ function App() {
         {/* TAB: KANBAN BOARD */}
         {activeTab === 'kanban' && (() => {
           // Ordenar as tarefas do mais antigo para o mais recente por data de criacao
-          const sortedTasks = [...tasks].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          const sortedTasks = [...filteredTasks].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
           return (
             <div>
@@ -1605,7 +1961,86 @@ function App() {
                 </div>
               </div>
 
-              <div className="kanban-board">
+              
+            {/* FILTER PANEL */}
+            <div className="card" style={{ marginBottom: '24px', padding: '16px', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '8px', minWidth: '150px' }}>
+                <Filter size={18} /> Filtrar Demandas:
+              </div>
+              
+              <div className="form-group" style={{ margin: 0, flex: '1 1 200px' }}>
+                <select 
+                  className="form-input" 
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  value={filterProject}
+                  onChange={e => setFilterProject(e.target.value)}
+                >
+                  <option value="">Todos os Projetos</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group" style={{ margin: 0, flex: '1 1 200px' }}>
+                <select 
+                  className="form-input" 
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  value={filterAnalyst}
+                  onChange={e => setFilterAnalyst(e.target.value)}
+                >
+                  <option value="">Todos os Executores</option>
+                  {users.filter(u => u.role === 'ANALYST').map(u => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group" style={{ margin: 0, flex: '1 1 150px' }}>
+                <select 
+                  className="form-input" 
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  value={filterUrgent}
+                  onChange={e => setFilterUrgent(e.target.value)}
+                >
+                  <option value="ALL">Qualquer Urgência</option>
+                  <option value="URGENT">Apenas Urgentes 🚨</option>
+                  <option value="NORMAL">Apenas Normais</option>
+                </select>
+              </div>
+
+              <div className="form-group" style={{ margin: 0, flex: '1 1 150px' }}>
+                <select 
+                  className="form-input" 
+                  style={{ padding: '8px 12px', fontSize: '0.85rem' }}
+                  value={filterStatus}
+                  onChange={e => setFilterStatus(e.target.value)}
+                >
+                  <option value="ALL">Qualquer Situação</option>
+                  <option value="TODO">A Fazer</option>
+                  <option value="DOING">Em Progresso</option>
+                  <option value="BLOCKED">Bloqueado</option>
+                  <option value="DONE">Concluído</option>
+                  <option value="OVERDUE">Atrasado ⚠️</option>
+                </select>
+              </div>
+
+              {(filterProject || filterAnalyst || filterUrgent !== 'ALL' || filterStatus !== 'ALL') && (
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ width: 'auto', padding: '8px 16px', margin: 0, fontSize: '0.85rem' }}
+                  onClick={() => {
+                    setFilterProject('');
+                    setFilterAnalyst('');
+                    setFilterUrgent('ALL');
+                    setFilterStatus('ALL');
+                  }}
+                >
+                  Limpar Filtros
+                </button>
+              )}
+            </div>
+  \n              <div className="kanban-board">
                 {/* COLUNA: A FAZER */}
                 <div 
                   className="kanban-column"

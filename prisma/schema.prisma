@@ -26,6 +26,10 @@ model User {
   subordinates    User[]        @relation("UserToGestor")
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  failedLoginAttempts Int       @default(0)
+  lockoutUntil        DateTime?
+  passwordNeedsReset  Boolean   @default(false)
+  auditLogs           AuditLog[]
 }
 
 enum Role {
@@ -124,4 +128,14 @@ model SubChapter {
   tasks     Task[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  details   String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ipAddress String?
+  createdAt DateTime @default(now())
 }

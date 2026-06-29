@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTask = exports.listTasks = exports.claimTask = exports.updateTaskProgress = exports.updateTaskStatus = exports.createTask = void 0;
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const email_service_1 = require("../services/email.service");
+const audit_service_1 = require("../services/audit.service");
 const createTask = async (req, res) => {
     const { title, projectId, assigneeIds, // Array of assignee IDs
     why, where, how, howMuch, dataInicioProgramada, dataPrevistaFinalizar, subChapterId, isUrgent } = req.body;
@@ -31,6 +32,7 @@ const createTask = async (req, res) => {
         if (assigneeIds && Array.isArray(assigneeIds) && assigneeIds.length > 0) {
             email_service_1.EmailService.sendTaskAssignmentEmail(assigneeIds, task.id).catch(err => console.error('[EmailService Error]:', err));
         }
+        await audit_service_1.AuditService.logAction(req.user ? req.user.id : null, 'CREATE_TASK', `Criou a tarefa "${task.title}" (ID ${task.id}) no projeto ID ${projectId || 'Sem Projeto'}`, req.ip);
         res.status(201).json(task);
     }
     catch (err) {
@@ -87,6 +89,7 @@ const updateTaskStatus = async (req, res) => {
         if (status === 'DONE') {
             email_service_1.EmailService.sendTaskCompletionEmail(task.id, req.user.id).catch(err => console.error('[EmailService Error]:', err));
         }
+        await audit_service_1.AuditService.logAction(req.user ? req.user.id : null, 'UPDATE_TASK_STATUS', `Alterou o status da tarefa "${task.title}" (ID ${task.id}) de "${existing.status}" para "${task.status}". Motivo bloqueio: ${blockedReason || '-'}`, req.ip);
         res.json(task);
     }
     catch (err) {
@@ -139,6 +142,7 @@ const updateTaskProgress = async (req, res) => {
         if (progressVal === 100) {
             email_service_1.EmailService.sendTaskCompletionEmail(task.id, req.user.id).catch(err => console.error('[EmailService Error]:', err));
         }
+        await audit_service_1.AuditService.logAction(req.user ? req.user.id : null, 'UPDATE_TASK_PROGRESS', `Alterou o progresso da tarefa "${task.title}" (ID ${task.id}) de ${existing.porcentagemExecucao}% para ${task.porcentagemExecucao}%`, req.ip);
         res.json(task);
     }
     catch (err) {
@@ -175,6 +179,7 @@ const claimTask = async (req, res) => {
             }
         });
         email_service_1.EmailService.sendTaskAssignmentEmail([userId], updated.id).catch(err => console.error('[EmailService Error]:', err));
+        await audit_service_1.AuditService.logAction(userId, 'CLAIM_TASK', `Reivindicou a execução da tarefa "${updated.title}" (ID ${updated.id})`, req.ip);
         res.json(updated);
     }
     catch (err) {
@@ -242,6 +247,7 @@ const deleteTask = async (req, res) => {
             res.status(404).json({ error: 'Tarefa não encontrada.' });
             return;
         }
+        await audit_service_1.AuditService.logAction(req.user ? req.user.id : null, 'DELETE_TASK', `Excluiu a tarefa "${existing.title}" (ID ${id})`, req.ip);
         await prisma_1.default.task.delete({ where: { id } });
         res.json({ message: 'Tarefa excluída com sucesso!' });
     }

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import { EmailService } from '../services/email.service';
+import { AuditService } from '../services/audit.service';
 
 export const createTask = async (req: Request, res: Response) => {
   const { 
@@ -40,6 +41,13 @@ export const createTask = async (req: Request, res: Response) => {
     if (assigneeIds && Array.isArray(assigneeIds) && assigneeIds.length > 0) {
       EmailService.sendTaskAssignmentEmail(assigneeIds, task.id).catch(err => console.error('[EmailService Error]:', err));
     }
+
+    await AuditService.logAction(
+      req.user ? req.user.id : null,
+      'CREATE_TASK',
+      `Criou a tarefa "${task.title}" (ID ${task.id}) no projeto ID ${projectId || 'Sem Projeto'}`,
+      req.ip
+    );
 
     res.status(201).json(task);
   } catch (err: any) {
@@ -99,6 +107,13 @@ export const updateTaskStatus = async (req: Request, res: Response) => {
       EmailService.sendTaskCompletionEmail(task.id, req.user.id).catch(err => console.error('[EmailService Error]:', err));
     }
 
+    await AuditService.logAction(
+      req.user ? req.user.id : null,
+      'UPDATE_TASK_STATUS',
+      `Alterou o status da tarefa "${task.title}" (ID ${task.id}) de "${existing.status}" para "${task.status}". Motivo bloqueio: ${blockedReason || '-'}`,
+      req.ip
+    );
+
     res.json(task);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Erro ao atualizar status da tarefa.' });
@@ -155,6 +170,13 @@ export const updateTaskProgress = async (req: Request, res: Response) => {
       EmailService.sendTaskCompletionEmail(task.id, req.user.id).catch(err => console.error('[EmailService Error]:', err));
     }
 
+    await AuditService.logAction(
+      req.user ? req.user.id : null,
+      'UPDATE_TASK_PROGRESS',
+      `Alterou o progresso da tarefa "${task.title}" (ID ${task.id}) de ${existing.porcentagemExecucao}% para ${task.porcentagemExecucao}%`,
+      req.ip
+    );
+
     res.json(task);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Erro ao atualizar progresso da tarefa.' });
@@ -196,6 +218,13 @@ export const claimTask = async (req: Request, res: Response) => {
 
     EmailService.sendTaskAssignmentEmail([userId], updated.id).catch(err => console.error('[EmailService Error]:', err));
     
+    await AuditService.logAction(
+      userId,
+      'CLAIM_TASK',
+      `Reivindicou a execução da tarefa "${updated.title}" (ID ${updated.id})`,
+      req.ip
+    );
+
     res.json(updated);
   } catch (err: any) {
     res.status(500).json({ error: err.message || 'Erro ao reivindicar tarefa.' });
@@ -260,6 +289,14 @@ export const deleteTask = async (req: Request, res: Response) => {
       res.status(404).json({ error: 'Tarefa não encontrada.' });
       return;
     }
+
+    await AuditService.logAction(
+      req.user ? req.user.id : null,
+      'DELETE_TASK',
+      `Excluiu a tarefa "${existing.title}" (ID ${id})`,
+      req.ip
+    );
+
     await prisma.task.delete({ where: { id } });
     res.json({ message: 'Tarefa excluída com sucesso!' });
   } catch (err: any) {

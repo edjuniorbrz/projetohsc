@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.listDocuments = exports.downloadDocument = exports.uploadDocument = void 0;
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const path_1 = __importDefault(require("path"));
+const audit_service_1 = require("../services/audit.service");
 const uploadDocument = async (req, res) => {
     if (!req.file) {
         res.status(400).json({ error: 'Nenhum arquivo enviado' });
@@ -20,6 +21,7 @@ const uploadDocument = async (req, res) => {
             taskId
         }
     });
+    await audit_service_1.AuditService.logAction(req.user ? req.user.id : null, 'UPLOAD_DOCUMENT', `Fez upload do documento "${document.originalName}" para a tarefa ID ${taskId}. Confidencial: ${document.isConfidential}`, req.ip);
     res.status(201).json(document);
 };
 exports.uploadDocument = uploadDocument;
@@ -47,6 +49,7 @@ const downloadDocument = async (req, res) => {
             return;
         }
     }
+    await audit_service_1.AuditService.logAction(user.id, 'DOWNLOAD_DOCUMENT', `Fez download do documento "${document.originalName}" (ID ${document.id}) da tarefa "${document.task.title}"`, req.ip);
     const filePath = path_1.default.join(__dirname, '../../uploads', document.filename);
     res.download(filePath, document.originalName);
 };

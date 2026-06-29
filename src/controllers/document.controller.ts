@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma';
 import path from 'path';
+import { AuditService } from '../services/audit.service';
 
 export const uploadDocument = async (req: Request, res: Response) => {
   if (!req.file) {
@@ -16,6 +17,14 @@ export const uploadDocument = async (req: Request, res: Response) => {
       taskId
     }
   });
+
+  await AuditService.logAction(
+    req.user ? req.user.id : null,
+    'UPLOAD_DOCUMENT',
+    `Fez upload do documento "${document.originalName}" para a tarefa ID ${taskId}. Confidencial: ${document.isConfidential}`,
+    req.ip
+  );
+
   res.status(201).json(document);
 };
 
@@ -43,6 +52,14 @@ export const downloadDocument = async (req: Request, res: Response) => {
       return;
     }
   }
+
+  await AuditService.logAction(
+    user.id,
+    'DOWNLOAD_DOCUMENT',
+    `Fez download do documento "${document.originalName}" (ID ${document.id}) da tarefa "${document.task.title}"`,
+    req.ip
+  );
+
   const filePath = path.join(__dirname, '../../uploads', document.filename);
   res.download(filePath, document.originalName);
 };

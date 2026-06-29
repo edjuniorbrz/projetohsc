@@ -17,7 +17,8 @@ import {
   X,
   UserCheck,
   Info,
-  Filter
+  Filter,
+  Maximize2
 } from 'lucide-react';
 
 interface User {
@@ -186,6 +187,7 @@ function App() {
   const [gestores, setGestores] = useState<Gestor[]>([]);
   const [activeCalendarAnalystId, setActiveCalendarAnalystId] = useState<string | null>(null);
   const [calendarMonths, setCalendarMonths] = useState<Record<string, { year: number; month: number }>>({});
+  const [maximizedTaskId, setMaximizedTaskId] = useState<string | null>(null);
   
   // Create Modals/Forms State
   const [newProject, setNewProject] = useState({ 
@@ -1264,6 +1266,261 @@ function App() {
               </div>
             );
           })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMaximizedTaskModal = (t: Task) => {
+    const isUserAssigned = t.assignees?.some(a => a.id === currentUser?.id);
+    const hasAssignees = t.assignees && t.assignees.length > 0;
+    const seq = getTaskSequenceCode(t);
+    const proj = projects.find(p => p.id === t.projectId);
+    const projName = proj?.title || 'Demanda Avulsa';
+
+    return (
+      <div className="modal-backdrop" onClick={() => setMaximizedTaskId(null)}>
+        <div 
+          className="modal-card card animate-scale" 
+          onClick={e => e.stopPropagation()} 
+          style={{ 
+            maxWidth: '1000px', 
+            width: '90%', 
+            maxHeight: '90vh', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            padding: '24px', 
+            background: '#0d111b',
+            position: 'relative'
+          }}
+        >
+          {/* Header Close button */}
+          <button 
+            type="button"
+            onClick={() => setMaximizedTaskId(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--text-muted)'
+            }}
+          >
+            <X size={24} />
+          </button>
+
+          {/* Modal Header */}
+          <div style={{ paddingRight: '40px', marginBottom: '20px' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
+              {projName} {proj?.categoria && `(${proj.categoria})`}
+              {t.subChapter && ` > ${t.subChapter.title}`}
+            </span>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', marginTop: '6px', textAlign: 'left' }}>
+              {seq ? `[${seq}] ` : ''}{t.title}
+            </h2>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '10px' }}>
+              <span className="column-badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
+                Status: {t.status === 'TODO' ? 'A Fazer' : t.status === 'DOING' ? 'Em Progresso' : t.status === 'BLOCKED' ? 'Bloqueado' : 'Concluído'}
+              </span>
+              {t.isUrgent && (
+                <span className="column-badge" style={{ background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', fontWeight: 700 }}>
+                  URGENTE
+                </span>
+              )}
+              {t.blockedReason && (
+                <span className="column-badge" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>
+                  Motivo Bloqueio: {t.blockedReason}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Modal Body Grid */}
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '1fr 1.2fr', 
+            gap: '24px', 
+            overflowY: 'auto',
+            flexGrow: 1,
+            paddingRight: '4px'
+          }}>
+            {/* Left Column: Metadata & 5W2H */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderRight: '1px solid rgba(255, 255, 255, 0.05)', paddingRight: '20px' }}>
+              
+              {/* 5W2H Box */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px', padding: '16px' }}>
+                <h4 style={{ color: 'var(--primary)', fontWeight: 700, marginBottom: '12px', fontSize: '0.9rem', textAlign: 'left' }}>Detalhamento 5W2H</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem', textAlign: 'left' }}>
+                  <div><strong>WHY (Por quê?):</strong> <p style={{ color: 'var(--text-muted)', marginTop: '2px', fontSize: '0.8rem', whiteSpace: 'pre-line' }}>{t.why || 'Não cadastrado'}</p></div>
+                  <div><strong>WHERE (Onde?):</strong> <p style={{ color: 'var(--text-muted)', marginTop: '2px', fontSize: '0.8rem', whiteSpace: 'pre-line' }}>{t.where || 'Não cadastrado'}</p></div>
+                  <div><strong>HOW (Como?):</strong> <p style={{ color: 'var(--text-muted)', marginTop: '2px', fontSize: '0.8rem', whiteSpace: 'pre-line' }}>{t.how || 'Não cadastrado'}</p></div>
+                  <div><strong>HOW MUCH (Custo?):</strong> <span style={{ color: 'var(--primary)', fontWeight: 600 }}>{t.howMuch ? `R$ ${t.howMuch.toFixed(2)}` : 'R$ 0,00'}</span></div>
+                </div>
+              </div>
+
+              {/* Executantes & Progresso */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px', padding: '16px' }}>
+                <h4 style={{ color: '#fff', fontWeight: 700, marginBottom: '12px', fontSize: '0.9rem', textAlign: 'left' }}>Execução & Responsabilidade</h4>
+                
+                {/* Executantes */}
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', textAlign: 'left' }}>Executantes Designados:</div>
+                  {hasAssignees ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {t.assignees?.map(a => (
+                        <div key={a.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem' }}>
+                          <div className="avatar" style={{ width: '18px', height: '18px', fontSize: '0.6rem', margin: 0 }}>
+                            {a.name.substring(0, 2).toUpperCase()}
+                          </div>
+                          <span>{a.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'left' }}>Nenhum executante.</div>
+                  )}
+                </div>
+
+                {/* Slider de Progresso */}
+                <div style={{ marginTop: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Progresso da Ação:</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>{t.porcentagemExecucao}%</span>
+                  </div>
+                  <div className="gantt-progress-bg" style={{ height: '8px', marginBottom: '12px' }}>
+                    <div className="gantt-progress-bar" style={{ width: `${t.porcentagemExecucao}%` }}></div>
+                  </div>
+                  
+                  {isUserAssigned && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <input 
+                        type="range" 
+                        min="10" 
+                        max="95" 
+                        step="5"
+                        value={t.porcentagemExecucao} 
+                        onChange={(e) => handleUpdateTaskProgress(t.id, parseInt(e.target.value))}
+                        style={{ flexGrow: 1, height: '4px', cursor: 'pointer' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Cronograma Box */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px', padding: '16px' }}>
+                <h4 style={{ color: '#fff', fontWeight: 700, marginBottom: '12px', fontSize: '0.9rem', textAlign: 'left' }}>Prazos & Cronograma</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'left' }}>
+                  <div><strong>WHEN Programado:</strong> <span style={{ color: '#fff' }}>{formatDateString(t.dataInicioProgramada)} a {formatDateString(t.dataPrevistaFinalizar)}</span></div>
+                  <div><strong>WHEN Real:</strong> <span style={{ color: '#fff' }}>{formatDateString(t.dataInicioReal)} a {formatDateString(t.dataRealFinalizada)}</span></div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right Column: Large Chat & Comments history */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '100%', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+                <h4 style={{ fontWeight: 700, color: '#fff', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem', textAlign: 'left' }}>
+                  💬 Observações & Histórico ({t.comments?.length || 0})
+                </h4>
+
+                {/* Large Comments log box */}
+                <div style={{ 
+                  flexGrow: 1, 
+                  background: 'rgba(0, 0, 0, 0.2)', 
+                  border: '1px solid rgba(255, 255, 255, 0.04)', 
+                  borderRadius: '12px', 
+                  padding: '16px', 
+                  overflowY: 'auto', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '12px',
+                  marginBottom: '16px',
+                  maxHeight: '380px'
+                }}>
+                  {t.comments && t.comments.length > 0 ? (
+                    t.comments.map(c => {
+                      const commentDate = new Date(c.createdAt).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      });
+                      return (
+                        <div key={c.id} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '12px', borderLeft: '3px solid var(--primary)', textAlign: 'left' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.75rem', opacity: 0.85 }}>
+                            <span style={{ fontWeight: 700, color: 'var(--primary)' }}>{c.user?.name}</span>
+                            <span>{commentDate}</span>
+                          </div>
+                          <p style={{ margin: 0, fontSize: '0.8rem', color: '#e5e7eb', whiteSpace: 'pre-line', lineHeight: '1.4' }}>{c.text}</p>
+                          {c.filename && (
+                            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.03)', padding: '6px 10px', borderRadius: '6px', width: 'fit-content' }}>
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>📎 Anexo:</span>
+                              <a 
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  handleDownloadAttachment(c.filename as string);
+                                }}
+                                style={{ color: 'var(--primary)', textDecoration: 'underline', fontSize: '0.75rem', fontWeight: 600 }}
+                              >
+                                {c.originalName || c.filename}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontStyle: 'italic', fontSize: '0.85rem' }}>
+                      Nenhuma observação registrada neste card ainda.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Large Input Area */}
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget;
+                  const textInput = form.elements.namedItem('commentText') as HTMLTextAreaElement;
+                  const fileInput = form.elements.namedItem('commentFiles') as HTMLInputElement;
+                  handleAddComment(t.id, textInput.value, fileInput.files);
+                  form.reset();
+                }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+              >
+                <textarea
+                  name="commentText"
+                  placeholder="Insira aqui uma nova observação detalhada para o histórico..."
+                  className="form-input"
+                  rows={3}
+                  style={{ fontSize: '0.85rem', padding: '10px', resize: 'vertical', background: 'rgba(0,0,0,0.3)', margin: 0 }}
+                  required
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', background: 'rgba(255,255,255,0.04)', padding: '8px 14px', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.8rem', color: 'var(--text-main)' }} className="animate-hover">
+                    <span>📎 Anexar Arquivos (Vários)</span>
+                    <input 
+                      type="file" 
+                      name="commentFiles" 
+                      multiple 
+                      style={{ display: 'none' }} 
+                    />
+                  </label>
+                  <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '8px 20px', fontSize: '0.85rem', height: 'auto', borderRadius: '8px' }}>
+                    Enviar Observação
+                  </button>
+                </div>
+              </form>
+            </div>
+
+          </div>
         </div>
       </div>
     );
@@ -2492,6 +2749,13 @@ function App() {
                           >
                             {activeTaskDetailId === t.id ? 'Fechar Detalhes' : 'Ver 5W2H / Obs'}
                           </button>
+                          <button 
+                            className="action-icon" 
+                            style={{ fontSize: '0.7rem', padding: '4px 6px', background: 'rgba(14,165,233,0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => setMaximizedTaskId(t.id)}
+                          >
+                            <Maximize2 size={12} /> Tela Cheia
+                          </button>
                           
                           {isUserAssigned && (
                             <>
@@ -2627,6 +2891,13 @@ function App() {
                             onClick={() => setActiveTaskDetailId(activeTaskDetailId === t.id ? null : t.id)}
                           >
                             {activeTaskDetailId === t.id ? 'Fechar Detalhes' : 'Ver 5W2H / Obs'}
+                          </button>
+                          <button 
+                            className="action-icon" 
+                            style={{ fontSize: '0.7rem', padding: '4px 6px', background: 'rgba(14,165,233,0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => setMaximizedTaskId(t.id)}
+                          >
+                            <Maximize2 size={12} /> Tela Cheia
                           </button>
                           
                           {isUserAssigned && (
@@ -2791,6 +3062,13 @@ function App() {
                           >
                             {activeTaskDetailId === t.id ? 'Fechar Detalhes' : 'Ver 5W2H / Obs'}
                           </button>
+                          <button 
+                            className="action-icon" 
+                            style={{ fontSize: '0.7rem', padding: '4px 6px', background: 'rgba(14,165,233,0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => setMaximizedTaskId(t.id)}
+                          >
+                            <Maximize2 size={12} /> Tela Cheia
+                          </button>
                           
                           {isUserAssigned && (
                             <button 
@@ -2870,6 +3148,13 @@ function App() {
                             onClick={() => setActiveTaskDetailId(activeTaskDetailId === t.id ? null : t.id)}
                           >
                             {activeTaskDetailId === t.id ? 'Fechar Detalhes' : 'Ver 5W2H / Obs'}
+                          </button>
+                          <button 
+                            className="action-icon" 
+                            style={{ fontSize: '0.7rem', padding: '4px 6px', background: 'rgba(14,165,233,0.1)', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            onClick={() => setMaximizedTaskId(t.id)}
+                          >
+                            <Maximize2 size={12} /> Tela Cheia
                           </button>
                           
                           {isUserAssigned && (
@@ -3647,6 +3932,11 @@ function App() {
           </div>
         </div>
       )}
+      {maximizedTaskId && (() => {
+        const t = tasks.find(task => task.id === maximizedTaskId);
+        if (!t) return null;
+        return renderMaximizedTaskModal(t);
+      })()}
     </div>
   );
 }

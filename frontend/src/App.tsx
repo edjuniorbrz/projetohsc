@@ -1190,6 +1190,78 @@ function App() {
     );
   };
 
+  const renderAnalystTasksList = (analystId: string) => {
+    const analystTasks = tasks.filter(t => t.assignees?.some(a => a.id === analystId));
+    
+    if (analystTasks.length === 0) {
+      return (
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '12px' }}>
+          Nenhuma tarefa designada a este analista.
+        </div>
+      );
+    }
+
+    return (
+      <div className="calendar-container" style={{ marginTop: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div className="calendar-header" style={{ marginBottom: '12px', paddingBottom: '8px' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>
+            Lista de Demandas Ativas ({analystTasks.length})
+          </span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '230px', overflowY: 'auto', paddingRight: '4px' }}>
+          {analystTasks.map(t => {
+            const seq = getTaskSequenceCode(t);
+            const projName = projects.find(p => p.id === t.projectId)?.title || 'Demanda Avulsa';
+            
+            let statusColor = 'var(--text-muted)';
+            if (t.status === 'TODO') statusColor = '#9ca3af';
+            else if (t.status === 'DOING') statusColor = 'var(--warning)';
+            else if (t.status === 'DONE') statusColor = 'var(--accent)';
+            else if (t.status === 'BLOCKED') statusColor = 'var(--danger)';
+
+            return (
+              <div 
+                key={t.id} 
+                style={{ 
+                  background: 'rgba(255, 255, 255, 0.02)', 
+                  border: '1px solid rgba(255, 255, 255, 0.04)', 
+                  borderRadius: '8px', 
+                  padding: '10px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '0.8rem'
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, color: '#fff', textAlign: 'left' }}>
+                    {seq ? `[${seq}] ` : ''}{t.title}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px', textAlign: 'left' }}>
+                    Origem: <span style={{ color: t.projectId ? 'var(--primary)' : 'var(--text-muted)', fontWeight: 600 }}>{projName}</span>
+                    {t.dataInicioProgramada && (
+                      <span> • Prazo: {formatDateString(t.dataInicioProgramada)} a {t.dataPrevistaFinalizar ? formatDateString(t.dataPrevistaFinalizar) : 'Não definido'}</span>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                  {t.isUrgent && (
+                    <span style={{ fontSize: '0.65rem', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                      URGENTE
+                    </span>
+                  )}
+                  <span style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.05)', color: statusColor, padding: '2px 6px', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(255,255,255,0.05)' }}>
+                    {t.status}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const formatDateString = (dateStr?: string | null) => {
     if (!dateStr) return 'Não registrado';
     const date = new Date(dateStr);
@@ -1701,7 +1773,16 @@ function App() {
                                 </button>
                               </div>
                             </div>
-                            {isCalendarOpen && renderAnalystCalendar(a.id)}
+                            {isCalendarOpen && (
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '16px', alignItems: 'stretch' }}>
+                                <div>
+                                  {renderAnalystCalendar(a.id)}
+                                </div>
+                                <div>
+                                  {renderAnalystTasksList(a.id)}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })

@@ -1,0 +1,15 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/generated/prisma
+
+# Compiled output
+dist/
+
+# Local runtime files
+logs/
+uploads/
+.system_generated/
+nssm_extracted/
+nssm.zip

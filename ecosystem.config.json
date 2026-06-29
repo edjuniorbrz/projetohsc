@@ -1,0 +1,32 @@
+{
+  "apps": [
+    {
+      "name": "portal-backend",
+      "script": "C:\\Users\\ed010472\\.gemini\\antigravity\\brain\\fee54186-a897-4ee4-a2d5-34ab97c9d7fc\\dist\\server.js",
+      "cwd": "C:/Users/ed010472/.gemini/antigravity/brain/fee54186-a897-4ee4-a2d5-34ab97c9d7fc",
+      "env": {
+        "NODE_ENV": "production",
+        "PORT": 3333
+      },
+      "watch": false,
+      "autorestart": true,
+      "max_restarts": 10,
+      "restart_delay": 3000,
+      "log_file": "C:\\Users\\ed010472\\.gemini\\antigravity\\brain\\fee54186-a897-4ee4-a2d5-34ab97c9d7fc\\logs\\backend.log",
+      "error_file": "C:\\Users\\ed010472\\.gemini\\antigravity\\brain\\fee54186-a897-4ee4-a2d5-34ab97c9d7fc\\logs\\backend-error.log",
+      "out_file": "C:\\Users\\ed010472\\.gemini\\antigravity\\brain\\fee54186-a897-4ee4-a2d5-34ab97c9d7fc\\logs\\backend-out.log"
+    },
+    {
+      "name": "portal-frontend",
+      "script": "serve-frontend.js",
+      "cwd": "C:/Users/ed010472/.gemini/antigravity/brain/fee54186-a897-4ee4-a2d5-34ab97c9d7fc",
+      "watch": false,
+      "autorestart": true,
+      "max_restarts": 10,
+      "restart_delay": 3000,
+      "log_file": "C:\\Users\\ed010472\\.gemini\\antigravity\\brain\\fee54186-a897-4ee4-a2d5-34ab97c9d7fc\\logs\\frontend.log",
+      "error_file": "C:\\Users\\ed010472\\.gemini\\antigravity\\brain\\fee54186-a897-4ee4-a2d5-34ab97c9d7fc\\logs\\frontend-error.log",
+      "out_file": "C:\\Users\\ed010472\\.gemini\\antigravity\\brain\\fee54186-a897-4ee4-a2d5-34ab97c9d7fc\\logs\\frontend-out.log"
+    }
+  ]
+}

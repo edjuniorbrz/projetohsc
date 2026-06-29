@@ -1171,7 +1171,7 @@ function App() {
             const tooltipTitle = hasTasks 
               ? `Demandas:\n` + activeTasksForDay.map(t => {
                   const seq = getTaskSequenceCode(t);
-                  const projName = projects.find(p => p.id === t.projectId)?.title || 'Demanda Avulsa';
+                  const projName = projects.find(p => p.id === t.projectId)?.title || 'Demanda Complexa';
                   const translatedStatus = statusTranslation[t.status] || t.status;
                   return `${seq ? `[${seq}] ` : ''}${t.title} (${projName} - ${translatedStatus})`;
                 }).join('\n')
@@ -1220,7 +1220,7 @@ function App() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '230px', overflowY: 'auto', paddingRight: '4px' }}>
           {analystTasks.map(t => {
             const seq = getTaskSequenceCode(t);
-            const projName = projects.find(p => p.id === t.projectId)?.title || 'Demanda Avulsa';
+            const projName = projects.find(p => p.id === t.projectId)?.title || 'Demanda Complexa';
             
             let statusColor = 'var(--text-muted)';
             if (t.status === 'TODO') statusColor = '#9ca3af';
@@ -1276,7 +1276,7 @@ function App() {
     const hasAssignees = t.assignees && t.assignees.length > 0;
     const seq = getTaskSequenceCode(t);
     const proj = projects.find(p => p.id === t.projectId);
-    const projName = proj?.title || 'Demanda Avulsa';
+    const projName = proj?.title || 'Demanda Complexa';
 
     return (
       <div className="modal-backdrop" onClick={() => setMaximizedTaskId(null)}>
@@ -2669,7 +2669,7 @@ function App() {
                           <span className="confidential-badge" style={{ fontSize: '0.65rem', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>
                             {(() => {
                               const proj = projects.find(p => p.id === t.projectId);
-                              if (!proj) return 'DEMANDA AVULSA';
+                              if (!proj) return 'DEMANDA COMPLEXA';
                               if (t.subChapter) {
                                 return (
                                   <span>

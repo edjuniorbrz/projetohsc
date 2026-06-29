@@ -985,7 +985,7 @@ function App() {
       bg = 'rgba(14, 165, 233, 0.08)';
       color = 'var(--primary)';
       border = '1px solid rgba(14, 165, 233, 0.2)';
-    } else if (categoria === 'Oriunda do Corporativo') {
+    } else if (categoria === 'Corporativo') {
       bg = 'rgba(16, 185, 129, 0.08)';
       color = 'var(--accent)';
       border = '1px solid rgba(16, 185, 129, 0.2)';
@@ -2653,7 +2653,7 @@ function App() {
                     >
                       <option value="">Selecione a Origem...</option>
                       <option value="Jornada Digital">Jornada Digital</option>
-                      <option value="Oriunda do Corporativo">Oriunda do Corporativo</option>
+                      <option value="Corporativo">Corporativo</option>
                       <option value="HSC">HSC</option>
                     </select>
                   </div>
@@ -3260,7 +3260,7 @@ function App() {
                 >
                   <option value="">Selecione a Origem...</option>
                   <option value="Jornada Digital">Jornada Digital</option>
-                  <option value="Oriunda do Corporativo">Oriunda do Corporativo</option>
+                  <option value="Corporativo">Corporativo</option>
                   <option value="HSC">HSC</option>
                 </select>
               </div>

@@ -106,7 +106,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           name: true,
           email: true,
           _count: {
-            select: { tasks: true }
+            select: { assignedTasks: true }
           }
         }
       });
@@ -115,7 +115,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         id: a.id,
         name: a.name,
         email: a.email,
-        taskCount: a._count.tasks
+        taskCount: a._count.assignedTasks
       }));
 
       res.json({

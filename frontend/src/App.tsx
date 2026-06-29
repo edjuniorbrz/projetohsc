@@ -1016,6 +1016,29 @@ function App() {
     );
   };
 
+  const getTaskSequenceCode = (task: Task) => {
+    if (!task.subChapterId || !task.projectId) return '';
+    const proj = projects.find(p => p.id === task.projectId);
+    if (!proj || !proj.subChapters) return '';
+    
+    // Sort subchapters by createdAt to get consistent indices
+    const sortedSubChapters = [...proj.subChapters].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    const subIdx = sortedSubChapters.findIndex(s => s.id === task.subChapterId);
+    if (subIdx === -1) return '';
+
+    // Sort tasks within this subchapter by createdAt
+    const subTasks = tasks
+      .filter(t => t.subChapterId === task.subChapterId)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      
+    const taskIdx = subTasks.findIndex(t => t.id === task.id);
+    if (taskIdx === -1) return '';
+
+    return `${subIdx + 1}.${taskIdx + 1}`;
+  };
+
   const formatDateString = (dateStr?: string | null) => {
     if (!dateStr) return 'Não registrado';
     const date = new Date(dateStr);
@@ -1474,7 +1497,7 @@ function App() {
                                  <div className="gantt-progress-bg">
                                    <div className="gantt-progress-bar" style={{ width: `${percent}%` }}></div>
                                  </div>
-                                 <span className="gantt-progress-text">{percent}% ({done}/{total} tarefas)</span>
+                                 <span className="gantt-progress-text">{percent}% (Média de {total} tarefas)</span>
                                </div>
                                <div className="gantt-weeks-span">
                                  <div className="gantt-timeline-grid">
@@ -1943,7 +1966,12 @@ function App() {
                     {filteredTasks.map(t => (
                       <tr key={t.id} style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-main)', fontSize: '0.9rem' }}>
                         <td style={{ padding: '16px', fontWeight: 700 }}>
-                          <div>{t.title}</div>
+                          <div>
+                            {(() => {
+                              const seq = getTaskSequenceCode(t);
+                              return seq ? `[${seq}] ${t.title}` : t.title;
+                            })()}
+                          </div>
                           {t.project && (
                             <div style={{ fontSize: '0.7rem', color: 'var(--primary)', marginTop: '4px', fontWeight: 600 }}>
                               {t.project.title}
@@ -2150,7 +2178,12 @@ function App() {
                           </div>
                         </div>
                         
-                        <h4 style={{ fontSize: '1rem', fontWeight: 700 }}>{t.title}</h4>
+                        <h4 style={{ fontSize: '1rem', fontWeight: 700 }}>
+                          {(() => {
+                            const seq = getTaskSequenceCode(t);
+                            return seq ? `[${seq}] ${t.title}` : t.title;
+                          })()}
+                        </h4>
                         
                         {hasAssignees ? (
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -2754,9 +2787,21 @@ function App() {
                               </button>
                             </>
                           )}
-                          <span className="column-badge" style={{ background: 'rgba(14,165,233,0.15)', color: 'var(--primary)', margin: 0 }}>
-                            {tasks.filter(t => t.projectId === p.id).length} Tarefas
-                          </span>
+                          {(() => {
+                            const projTasks = tasks.filter(t => t.projectId === p.id);
+                            const total = projTasks.length;
+                            const sumProgress = projTasks.reduce((sum, t) => sum + (t.porcentagemExecucao || 0), 0);
+                            const percent = total > 0 ? Math.round(sumProgress / total) : 0;
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '120px', alignItems: 'flex-end', justifyContent: 'center' }}>
+                                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>{percent}% Concluído</div>
+                                <div className="gantt-progress-bg" style={{ width: '100px', height: '4px', margin: '2px 0 0 0' }}>
+                                  <div className="gantt-progress-bar" style={{ width: `${percent}%` }}></div>
+                                </div>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{total} ações</span>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
 
@@ -2794,7 +2839,15 @@ function App() {
                                 <div key={sub.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.04)' }}>
                                   <div>
                                     <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--primary)' }}>{sub.title}</span>
-                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '8px' }}>({subTasks.length} ações)</span>
+                                    {(() => {
+                                      const subSum = subTasks.reduce((sum, t) => sum + (t.porcentagemExecucao || 0), 0);
+                                      const subPercent = subTasks.length > 0 ? Math.round(subSum / subTasks.length) : 0;
+                                      return (
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '8px' }}>
+                                          ({subTasks.length} ações • {subPercent}% concluído)
+                                        </span>
+                                      );
+                                    })()}
                                   </div>
                                   {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'MANAGER') && (
                                     <button 

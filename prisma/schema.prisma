@@ -8,29 +8,31 @@ datasource db {
 }
 
 model User {
-  id              String    @id @default(uuid())
-  name            String
-  email           String    @unique
-  password        String
-  role            Role      @default(ANALYST)
-  isActive        Boolean   @default(true)
-  cargo           String?
-  projects        Project[]     @relation("ProjectOwner")
-  managedProjects Project[]     @relation("ProjectToGestor")
-  tasks           Task[]
+  id                  String        @id @default(uuid())
+  name                String
+  email               String        @unique
+  password            String
+  role                Role          @default(ANALYST)
+  isActive            Boolean       @default(true)
+  cargo               String?
+  projects            Project[]     @relation("ProjectOwner")
+  managedProjects     Project[]     @relation("ProjectToGestor")
+  tasks               Task[]
   assignedTasks       Task[]        @relation("TaskAssignees")
   comments            TaskComment[]
   responsibleProjects Project[]     @relation("ProjectResponsibles")
-  gestorId        String?
-  gestor          User?         @relation("UserToGestor", fields: [gestorId], references: [id])
-  subordinates    User[]        @relation("UserToGestor")
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  failedLoginAttempts Int       @default(0)
+  gestorId            String?
+  gestor              User?         @relation("UserToGestor", fields: [gestorId], references: [id])
+  subordinates        User[]        @relation("UserToGestor")
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  failedLoginAttempts Int           @default(0)
   lockoutUntil        DateTime?
-  passwordNeedsReset  Boolean   @default(false)
-  acceptedLGPD        Boolean   @default(false)
+  passwordNeedsReset  Boolean       @default(false)
+  acceptedLGPD        Boolean       @default(false)
   auditLogs           AuditLog[]
+
+  @@index([gestorId])
 }
 
 enum Role {
@@ -40,64 +42,58 @@ enum Role {
 }
 
 model Project {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  ownerId     String
-  owner       User     @relation("ProjectOwner", fields: [ownerId], references: [id])
-  tasks       Task[]
+  id           String       @id @default(uuid())
+  title        String
+  description  String?
+  ownerId      String
+  owner        User         @relation("ProjectOwner", fields: [ownerId], references: [id])
+  tasks        Task[]
   gestorId     String?
-  gestor       User?         @relation("ProjectToGestor", fields: [gestorId], references: [id])
-  responsibles User[]        @relation("ProjectResponsibles")
+  gestor       User?        @relation("ProjectToGestor", fields: [gestorId], references: [id])
+  responsibles User[]       @relation("ProjectResponsibles")
   subChapters  SubChapter[]
-  
-  // Temporal control fields
-  dataInicio  DateTime?
-  dataFim     DateTime?
-  
-  // Classification
-  categoria   String?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  dataInicio   DateTime?
+  dataFim      DateTime?
+  categoria    String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([ownerId])
+  @@index([gestorId])
 }
 
 model Task {
-  id         String     @id @default(uuid())
-  title      String
-  status     String     @default("TODO")
-  projectId    String?
-  project      Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  assigneeId String?
-  assignee   User?         @relation(fields: [assigneeId], references: [id])
-  assignees  User[]        @relation("TaskAssignees")
-  documents    Document[]
-  comments     TaskComment[]
-  subChapterId String?
-  subChapter   SubChapter?   @relation(fields: [subChapterId], references: [id], onDelete: Cascade)
-  
-  // 5W2H extra fields
-  why                  String?
-  where                String?
-  how                  String?
-  howMuch              Float?
-  
-  // Temporal control fields
+  id                    String        @id @default(uuid())
+  title                 String
+  status                String        @default("TODO")
+  projectId             String?
+  project               Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  assigneeId            String?
+  assignee              User?         @relation(fields: [assigneeId], references: [id])
+  assignees             User[]        @relation("TaskAssignees")
+  documents             Document[]
+  comments              TaskComment[]
+  subChapterId          String?
+  subChapter            SubChapter?   @relation(fields: [subChapterId], references: [id], onDelete: Cascade)
+  why                   String?
+  where                 String?
+  how                   String?
+  howMuch               Float?
   dataInicioProgramada  DateTime?
   dataInicioReal        DateTime?
   dataPrevistaFinalizar DateTime?
   dataRealFinalizada    DateTime?
-  
-  // Progress tracking
-  porcentagemExecucao   Int        @default(0)
-  
-  // Blocked and Urgency tracking
+  porcentagemExecucao   Int           @default(0)
   blockedAt             DateTime?
   blockedReason         String?
-  isUrgent              Boolean    @default(false)
-  
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  isUrgent              Boolean       @default(false)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([projectId])
+  @@index([subChapterId])
+  @@index([status])
+  @@index([assigneeId])
 }
 
 model Document {
@@ -106,23 +102,26 @@ model Document {
   originalName   String
   isConfidential Boolean  @default(false)
   taskId         String
-  task           Task     @relation(fields: [taskId], references: [id])
+  task           Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
   createdAt      DateTime @default(now())
-}
 
+  @@index([taskId])
+}
 
 model TaskComment {
-  id            String   @id @default(uuid())
-  text          String
-  createdAt     DateTime @default(now())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id])
-  taskId        String
-  task          Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  filename      String?
-  originalName  String?
-}
+  id           String   @id @default(uuid())
+  text         String
+  createdAt    DateTime @default(now())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  taskId       String
+  task         Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  filename     String?
+  originalName String?
 
+  @@index([taskId])
+  @@index([userId])
+}
 
 model SubChapter {
   id        String   @id @default(uuid())
@@ -132,6 +131,8 @@ model SubChapter {
   tasks     Task[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([projectId])
 }
 
 model AuditLog {
@@ -142,4 +143,7 @@ model AuditLog {
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   ipAddress String?
   createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
 }

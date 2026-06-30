@@ -130,9 +130,27 @@ export const deleteGestor = async (req: Request, res: Response) => {
       return;
     }
 
+    // Check if gestor is in responsibles list of any project
+    const participatesProjects = await prisma.project.count({
+      where: { responsibles: { some: { id } } }
+    });
+    if (participatesProjects > 0) {
+      res.status(400).json({ error: 'Este gestor está vinculado como responsável/participante de projetos e não pode ser excluído.' });
+      return;
+    }
+
+    // Check if gestor is assigned to any task
+    const assignedTasks = await prisma.task.count({
+      where: { assignees: { some: { id } } }
+    });
+    if (assignedTasks > 0) {
+      res.status(400).json({ error: 'Este gestor possui tarefas atribuídas no cronograma e não pode ser excluído.' });
+      return;
+    }
+
     await prisma.user.delete({ where: { id } });
     res.json({ message: 'Gestor excluído com sucesso!' });
   } catch (error: any) {
-    res.status(500).json({ error: 'Erro ao excluir gestor' });
+    res.status(500).json({ error: 'Erro ao excluir gestor: ' + (error.message || error) });
   }
 };

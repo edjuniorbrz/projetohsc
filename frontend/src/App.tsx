@@ -30,6 +30,7 @@ interface User {
   gestor?: { id: string; name: string; email: string };
   cargo?: string | null;
   isActive: boolean;
+  acceptedLGPD: boolean;
 }
 
 interface Gestor {
@@ -134,7 +135,6 @@ function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   
   // Custom states for security & filters
-  const [lgpdConsent, setLgpdConsent] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [passwordResetForm, setPasswordResetForm] = useState({ newPassword: '', confirmPassword: '' });
   const [passwordResetError, setPasswordResetError] = useState('');
@@ -489,10 +489,6 @@ function App() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!lgpdConsent) {
-      showToast('Você precisa aceitar os termos de consentimento de dados (LGPD) para prosseguir.');
-      return;
-    }
     try {
       const response = await api.post('/auth/login', {
         email: authForm.email,
@@ -503,7 +499,9 @@ function App() {
       localStorage.setItem('user', JSON.stringify(user));
       setCurrentUser(user);
 
-      if (needsPasswordReset) {
+      if (!user.acceptedLGPD) {
+        setIsAuthenticated(true);
+      } else if (needsPasswordReset) {
         setShowPasswordReset(true);
         showToast('Aviso: É necessário redefinir a sua senha inicial.');
       } else {
@@ -513,6 +511,20 @@ function App() {
       }
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Erro ao realizar login');
+    }
+  };
+
+  const handleAcceptLGPD = async () => {
+    try {
+      await api.post('/auth/accept-lgpd');
+      if (currentUser) {
+        const updatedUser = { ...currentUser, acceptedLGPD: true };
+        setCurrentUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        showToast('Termo de consentimento aceito com sucesso!');
+      }
+    } catch (err) {
+      showToast('Erro ao aceitar o termo de consentimento.');
     }
   };
 
@@ -1669,22 +1681,7 @@ function App() {
             </div>
 
             
-            <div className="form-group" style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '16px' }}>
-              <input 
-                id="lgpdConsent"
-                name="lgpdConsent"
-                type="checkbox" 
-                checked={lgpdConsent}
-                onChange={e => setLgpdConsent(e.target.checked)}
-                required
-                style={{ marginTop: '4px', width: '16px', height: '16px', cursor: 'pointer' }}
-              />
-              <label htmlFor="lgpdConsent" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.4', cursor: 'pointer', userSelect: 'none' }}>
-                Declaro que li e concordo com os termos de consentimento e privacidade de dados (LGPD) para acesso ao portal corporativo.
-              </label>
-            </div>
-
-            <button type="submit" className="btn btn-primary" style={{ marginTop: '20px' }} disabled={!lgpdConsent}>
+            <button type="submit" className="btn btn-primary" style={{ marginTop: '20px' }}>
               Entrar no Sistema
             </button>
           </form>
@@ -3946,6 +3943,72 @@ function App() {
         if (!t) return null;
         return renderMaximizedTaskModal(t);
       })()}
+
+      {isAuthenticated && currentUser && !currentUser.acceptedLGPD && (
+        <div className="modal-backdrop" style={{ backdropFilter: 'blur(20px)', zIndex: 9999 }}>
+          <div 
+            className="card animate-scale" 
+            style={{ 
+              maxWidth: '650px', 
+              width: '95%', 
+              padding: '32px', 
+              background: '#0d111b', 
+              border: '1px solid var(--primary)', 
+              boxShadow: '0 20px 50px rgba(14, 165, 233, 0.3)',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(14, 165, 233, 0.1)', color: 'var(--primary)', marginBottom: '20px' }}>
+              <Info size={28} />
+            </div>
+            
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', marginBottom: '16px' }}>
+              Termo de Consentimento e Privacidade (LGPD)
+            </h2>
+            
+            <div 
+              style={{ 
+                background: 'rgba(0, 0, 0, 0.3)', 
+                border: '1px solid rgba(255,255,255,0.03)', 
+                borderRadius: '12px', 
+                padding: '20px', 
+                maxHeight: '260px', 
+                overflowY: 'auto', 
+                textAlign: 'left', 
+                fontSize: '0.85rem', 
+                color: 'var(--text-muted)', 
+                lineHeight: '1.6',
+                marginBottom: '24px'
+              }}
+            >
+              <p style={{ marginBottom: '12px' }}>
+                Para acessar e utilizar o <strong>Portal DEMANDAS TI</strong>, solicitamos o seu consentimento para o tratamento de seus dados pessoais em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD) - Lei nº 13.709/2018</strong>.
+              </p>
+              <p style={{ marginBottom: '12px' }}>
+                <strong>1. Finalidade do Tratamento:</strong> Seus dados de identificação corporativa (nome, e-mail, cargo e registros de ações) serão tratados estritamente para fins de coordenação de tarefas, cronogramas de projetos e auditoria interna de segurança (registros de acessos e ações).
+              </p>
+              <p style={{ marginBottom: '12px' }}>
+                <strong>2. Segurança da Informação:</strong> Empregamos medidas técnicas e administrativas aptas a proteger os seus dados contra acessos não autorizados ou destruição, perda e alteração indevidas.
+              </p>
+              <p style={{ marginBottom: '12px' }}>
+                <strong>3. Direitos do Titular:</strong> Você poderá, a qualquer tempo, solicitar informações sobre o tratamento de seus dados junto ao administrador do sistema ou DPO do hospital.
+              </p>
+              <p style={{ fontWeight: 600, color: 'var(--primary)' }}>
+                Ao clicar em "Aceitar e Prosseguir", você declara que leu, compreendeu e concorda com o tratamento de seus dados corporativos para as finalidades descritas neste termo.
+              </p>
+            </div>
+
+            <button 
+              type="button" 
+              onClick={handleAcceptLGPD}
+              className="btn btn-primary animate-hover" 
+              style={{ padding: '12px 28px', fontSize: '0.9rem', width: '100%', fontWeight: 700, borderRadius: '8px' }}
+            >
+              Aceitar e Prosseguir
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

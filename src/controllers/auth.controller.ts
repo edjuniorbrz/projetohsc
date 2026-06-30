@@ -85,7 +85,7 @@ export const login = async (req: Request, res: Response) => {
   const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET || 'super_secret_jwt_key_123', { expiresIn: '1d' });
   res.json({ 
     token, 
-    user: { id: user.id, name: user.name, role: user.role, email: user.email }, 
+    user: { id: user.id, name: user.name, role: user.role, email: user.email, acceptedLGPD: user.acceptedLGPD }, 
     needsPasswordReset: user.passwordNeedsReset 
   });
 };
@@ -207,10 +207,43 @@ export const deleteUser = async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Você não pode excluir a si mesmo' });
       return;
     }
+
+    // Check if user is owner of any project
+    const ownsProjects = await prisma.project.count({ where: { ownerId: id } });
+    if (ownsProjects > 0) {
+      res.status(400).json({ error: 'Não é possível excluir o usuário: ele é criador/proprietário de projetos.' });
+      return;
+    }
+
+    // Check if user is gestor of any project
+    const managesProjects = await prisma.project.count({ where: { gestorId: id } });
+    if (managesProjects > 0) {
+      res.status(400).json({ error: 'Não é possível excluir o usuário: ele é o gestor responsável por projetos.' });
+      return;
+    }
+
+    // Check if user is in responsibles list of any project
+    const participatesProjects = await prisma.project.count({
+      where: { responsibles: { some: { id } } }
+    });
+    if (participatesProjects > 0) {
+      res.status(400).json({ error: 'Não é possível excluir o usuário: ele está vinculado como responsável/participante de projetos.' });
+      return;
+    }
+
+    // Check if user is assigned to any task
+    const assignedTasks = await prisma.task.count({
+      where: { assignees: { some: { id } } }
+    });
+    if (assignedTasks > 0) {
+      res.status(400).json({ error: 'Não é possível excluir o usuário: ele possui tarefas atribuídas no cronograma.' });
+      return;
+    }
+
     await prisma.user.delete({ where: { id } });
     res.json({ message: 'Usuário excluído com sucesso' });
   } catch (error: any) {
-    res.status(500).json({ error: 'Erro ao excluir usuário (talvez ele possua projetos ou tarefas vinculadas)' });
+    res.status(500).json({ error: 'Erro ao excluir usuário: ' + (error.message || error) });
   }
 };
 
@@ -225,5 +258,22 @@ export const getAuditLogs = async (req: Request, res: Response) => {
     res.json(logs);
   } catch (error) {
     res.status(500).json({ error: 'Erro ao listar logs de auditoria' });
+  }
+};
+
+
+export const acceptLGPD = async (req: Request, res: Response) => {
+  if (!req.user || !req.user.id) {
+    res.status(401).json({ error: 'Não autorizado.' });
+    return;
+  }
+  try {
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { acceptedLGPD: true }
+    });
+    res.json({ message: 'Consentimento LGPD registrado com sucesso!' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao registrar consentimento LGPD.' });
   }
 };

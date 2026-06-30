@@ -2015,50 +2015,7 @@ function App() {
                   </div>
                 )}
 
-                <div className="card" style={{ marginBottom: '32px' }}>
-                  <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>Carga de Trabalho (Por Analista)</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {dashboardData.analystWorkload && dashboardData.analystWorkload.length > 0 ? (
-                      dashboardData.analystWorkload.map(a => {
-                        const isCalendarOpen = activeCalendarAnalystId === a.id;
-                        return (
-                          <div key={a.id} className="card" style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div>
-                                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{a.name}</div>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Analista de TI</div>
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <span className="column-badge" style={{ background: a.taskCount > 3 ? 'var(--danger)' : 'rgba(255,255,255,0.08)', margin: 0 }}>
-                                  {a.taskCount} tarefas designadas
-                                </span>
-                                <button 
-                                  className="btn btn-secondary animate-hover"
-                                  onClick={() => setActiveCalendarAnalystId(isCalendarOpen ? null : a.id)}
-                                  style={{ width: 'auto', padding: '6px 12px', fontSize: '0.75rem', height: 'auto', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                                >
-                                  <Calendar size={14} /> {isCalendarOpen ? 'Ocultar Calendário' : 'Ver Calendário'}
-                                </button>
-                              </div>
-                            </div>
-                            {isCalendarOpen && (
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '16px', alignItems: 'stretch' }}>
-                                <div>
-                                  {renderAnalystCalendar(a.id)}
-                                </div>
-                                <div>
-                                  {renderAnalystTasksList(a.id)}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <p style={{ color: 'var(--text-muted)' }}>Nenhum analista cadastrado no sistema ainda.</p>
-                    )}
-                  </div>
-                </div>
+
               </div>
             ) : (
               <div>
@@ -2186,6 +2143,54 @@ function App() {
                       )}
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {dashboardData?.analystWorkload && (
+              <div className="card" style={{ marginBottom: '32px', marginTop: '24px' }}>
+                <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>Carga de Trabalho (Por Analista)</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {dashboardData.analystWorkload.length > 0 ? (
+                    dashboardData.analystWorkload.map(a => {
+                      const isCalendarOpen = activeCalendarAnalystId === a.id;
+                      return (
+                        <div key={a.id} className="card" style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.04)', borderRadius: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{a.name}</div>
+                              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Analista de TI</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                              <span className="column-badge" style={{ background: a.taskCount > 3 ? 'var(--danger)' : 'rgba(255,255,255,0.08)', margin: 0 }}>
+                                {a.taskCount} tarefas designadas
+                              </span>
+                              <button 
+                                type="button"
+                                className="btn btn-secondary animate-hover"
+                                onClick={() => setActiveCalendarAnalystId(isCalendarOpen ? null : a.id)}
+                                style={{ width: 'auto', padding: '6px 12px', fontSize: '0.75rem', height: 'auto', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                              >
+                                <Calendar size={14} /> {isCalendarOpen ? 'Ocultar Calendário' : 'Ver Calendário'}
+                              </button>
+                            </div>
+                          </div>
+                          {isCalendarOpen && (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '16px', alignItems: 'stretch' }}>
+                              <div>
+                                {renderAnalystCalendar(a.id)}
+                              </div>
+                              <div>
+                                {renderAnalystTasksList(a.id)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p style={{ color: 'var(--text-muted)' }}>Nenhum analista cadastrado no sistema ainda.</p>
+                  )}
                 </div>
               </div>
             )}

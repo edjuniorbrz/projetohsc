@@ -127,26 +127,58 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       return;
     } else {
       const totalAssignedTasks = await prisma.task.count({
-        where: { assigneeId: userId }
+        where: {
+          assignees: {
+            some: { id: userId }
+          }
+        }
       });
 
       const todoTasks = await prisma.task.count({
-        where: { assigneeId: userId, status: 'TODO' }
+        where: {
+          assignees: {
+            some: { id: userId }
+          },
+          status: 'TODO'
+        }
       });
 
       const doingTasks = await prisma.task.count({
-        where: { assigneeId: userId, status: 'DOING' }
+        where: {
+          assignees: {
+            some: { id: userId }
+          },
+          status: 'DOING'
+        }
       });
 
       const doneTasks = await prisma.task.count({
-        where: { assigneeId: userId, status: 'DONE' }
+        where: {
+          assignees: {
+            some: { id: userId }
+          },
+          status: 'DONE'
+        }
       });
 
       const assignedProjects = await prisma.project.findMany({
         where: {
-          tasks: {
-            some: { assigneeId: userId }
-          }
+          OR: [
+            {
+              responsibles: {
+                some: { id: userId }
+              }
+            },
+            {
+              tasks: {
+                some: {
+                  assignees: {
+                    some: { id: userId }
+                  }
+                }
+              }
+            }
+          ]
         },
         select: {
           id: true,

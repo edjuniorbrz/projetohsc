@@ -132,7 +132,7 @@ interface NotificationItem {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'action' | 'kanban' | 'users' | 'gestores'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'projects' | 'create-project' | 'action' | 'kanban' | 'users' | 'gestores'>('dashboard');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   
   // Custom states for security & filters
@@ -758,6 +758,7 @@ function App() {
       fetchProjects();
       fetchDashboard();
       showToast('Projeto criado com sucesso!');
+      setActiveTab('projects');
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Erro ao criar projeto');
     }
@@ -3379,119 +3380,150 @@ function App() {
             </div>
           );
         })()}{/* TAB: PROJETOS */}
-        {activeTab === 'projects' && (
+        {activeTab === 'create-project' && (
           <div>
             <div style={{ marginBottom: '32px' }}>
-              <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Gestão de Projetos</h1>
-              <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Crie e administre as demandas e projetos de TI com cronogramas estruturados.</p>
+              <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Criar Novo Projeto</h1>
+              <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Cadastre um novo projeto estrutural no sistema.</p>
             </div>
 
-            {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'MANAGER') && (
-              <div className="card" style={{ marginBottom: '32px' }}>
-                <h3 style={{ marginBottom: '20px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <FolderPlus className="primary" /> Novo Projeto Estrutural
-                </h3>
-                <form onSubmit={handleCreateProject}>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="projectTitle">Título do Projeto</label>
+            <div className="card">
+              <h3 style={{ marginBottom: '20px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <FolderPlus className="primary" /> Detalhes do Novo Projeto
+              </h3>
+              <form onSubmit={handleCreateProject}>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="projectTitle">Título do Projeto</label>
+                  <input 
+                    id="projectTitle"
+                    name="projectTitle"
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Ex: IMPLANTAÇÃO DE SERVIDORES DE BANCO DE DADOS"
+                    value={newProject.title}
+                    onChange={e => setNewProject({ ...newProject, title: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="projectDesc">Descrição / Escopo</label>
+                  <textarea 
+                    id="projectDesc"
+                    name="projectDesc"
+                    className="form-input" 
+                    rows={3} 
+                    placeholder="Descreva detalhadamente o escopo e objetivos desta demanda de TI..."
+                    value={newProject.description}
+                    onChange={e => setNewProject({ ...newProject, description: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="projectCategory">Origem / Classificação da Demanda</label>
+                  <select
+                    id="projectCategory"
+                    name="projectCategory"
+                    className="form-input"
+                    value={newProject.categoria}
+                    onChange={e => setNewProject({ ...newProject, categoria: e.target.value })}
+                    required
+                  >
+                    <option value="">Selecione a Origem...</option>
+                    <option value="Jornada Digital">Jornada Digital</option>
+                    <option value="Corporativo">Corporativo</option>
+                    <option value="HSC">HSC</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Data de Início do Projeto</label>
                     <input 
-                      id="projectTitle"
-                      name="projectTitle"
-                      type="text" 
-                      className="form-input" 
-                      placeholder="Ex: IMPLANTAÇÃO DE SERVIDORES DE BANCO DE DADOS"
-                      value={newProject.title}
-                      onChange={e => setNewProject({ ...newProject, title: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="projectDesc">Descrição / Escopo</label>
-                    <textarea 
-                      id="projectDesc"
-                      name="projectDesc"
-                      className="form-input" 
-                      rows={3} 
-                      placeholder="Descreva detalhadamente o escopo e objetivos desta demanda de TI..."
-                      value={newProject.description}
-                      onChange={e => setNewProject({ ...newProject, description: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="projectCategory">Origem / Classificação da Demanda</label>
-                    <select
-                      id="projectCategory"
-                      name="projectCategory"
+                      type="date"
                       className="form-input"
-                      value={newProject.categoria}
-                      onChange={e => setNewProject({ ...newProject, categoria: e.target.value })}
+                      value={newProject.dataInicio}
+                      onChange={e => setNewProject({ ...newProject, dataInicio: e.target.value })}
                       required
-                    >
-                      <option value="">Selecione a Origem...</option>
-                      <option value="Jornada Digital">Jornada Digital</option>
-                      <option value="Corporativo">Corporativo</option>
-                      <option value="HSC">HSC</option>
-                    </select>
+                    />
                   </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label">Data de Término do Projeto</label>
+                    <input 
+                      type="date"
+                      className="form-input"
+                      value={newProject.dataFim}
+                      onChange={e => setNewProject({ ...newProject, dataFim: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label className="form-label">Gestores Responsáveis (Múltiplos)</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px', background: 'rgba(0,0,0,0.2)' }}>
+                    {gestores.filter(g => g.isActive).map(gestor => {
+                      const isChecked = newProject.responsibleIds.includes(gestor.id);
+                      return (
+                        <label key={gestor.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '2px 4px', borderRadius: '4px' }} className="animate-hover">
+                          <input 
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              const nextIds = isChecked
+                                ? newProject.responsibleIds.filter(id => id !== gestor.id)
+                                : [...newProject.responsibleIds, gestor.id];
+                              setNewProject({ ...newProject, responsibleIds: nextIds });
+                            }}
+                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                          />
+                          <div className="avatar" style={{ width: '22px', height: '22px', fontSize: '0.65rem', margin: 0 }}>
+                            {gestor.name.substring(0,2).toUpperCase()}
+                          </div>
+                          <span style={{ fontSize: '0.85rem' }}>{gestor.name} {gestor.cargo ? `(${gestor.cargo})` : ''}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-                    <div className="form-group" style={{ margin: 0 }}>
-                      <label className="form-label">Data de Início do Projeto</label>
-                      <input 
-                        type="date"
-                        className="form-input"
-                        value={newProject.dataInicio}
-                        onChange={e => setNewProject({ ...newProject, dataInicio: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="form-group" style={{ margin: 0 }}>
-                      <label className="form-label">Data de Término do Projeto</label>
-                      <input 
-                        type="date"
-                        className="form-input"
-                        value={newProject.dataFim}
-                        onChange={e => setNewProject({ ...newProject, dataFim: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="form-group">
-                    <label className="form-label">Gestores Responsáveis (Múltiplos)</label>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px', background: 'rgba(0,0,0,0.2)' }}>
-                      {gestores.filter(g => g.isActive).map(gestor => {
-                        const isChecked = newProject.responsibleIds.includes(gestor.id);
-                        return (
-                          <label key={gestor.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '2px 4px', borderRadius: '4px' }} className="animate-hover">
-                            <input 
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => {
-                                const nextIds = isChecked
-                                  ? newProject.responsibleIds.filter(id => id !== gestor.id)
-                                  : [...newProject.responsibleIds, gestor.id];
-                                setNewProject({ ...newProject, responsibleIds: nextIds });
-                              }}
-                              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                            />
-                            <div className="avatar" style={{ width: '22px', height: '22px', fontSize: '0.65rem', margin: 0 }}>
-                              {gestor.name.substring(0,2).toUpperCase()}
-                            </div>
-                            <span style={{ fontSize: '0.85rem' }}>{gestor.name} {gestor.cargo ? `(${gestor.cargo})` : ''}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <button type="submit" className="btn btn-primary" style={{ width: 'auto', marginTop: '10px' }}>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+                  <button type="submit" className="btn btn-primary" style={{ width: 'auto' }}>
                     Criar Projeto Estrutural
                   </button>
-                </form>
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary" 
+                    onClick={() => setActiveTab('projects')}
+                    style={{ width: 'auto' }}
+                  >
+                    Voltar para Projetos
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'projects' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h1 style={{ fontSize: '2rem', fontWeight: 700 }}>Gestão de Projetos</h1>
+                <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>Administre as demandas e projetos de TI com cronogramas estruturados.</p>
               </div>
-            )}
+              {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'MANAGER') && (
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setNewProject({ title: '', description: '', gestorId: '', dataInicio: '', dataFim: '', responsibleIds: [], categoria: '' });
+                    setActiveTab('create-project');
+                  }}
+                  style={{ width: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <Plus size={16} /> Novo Projeto
+                </button>
+              )}
+            </div>
 
             <div className="card">
               <h3 style={{ marginBottom: '20px', fontWeight: 600 }}>Projetos Cadastrados</h3>

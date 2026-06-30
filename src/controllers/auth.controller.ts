@@ -85,7 +85,14 @@ export const login = async (req: Request, res: Response) => {
   const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET || 'super_secret_jwt_key_123', { expiresIn: '1d' });
   res.json({ 
     token, 
-    user: { id: user.id, name: user.name, role: user.role, email: user.email, acceptedLGPD: user.acceptedLGPD }, 
+    user: { 
+      id: user.id, 
+      name: user.name, 
+      role: user.role, 
+      email: user.email, 
+      acceptedLGPD: user.acceptedLGPD,
+      passwordNeedsReset: user.passwordNeedsReset 
+    }, 
     needsPasswordReset: user.passwordNeedsReset 
   });
 };

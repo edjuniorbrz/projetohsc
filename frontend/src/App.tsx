@@ -31,6 +31,7 @@ interface User {
   cargo?: string | null;
   isActive: boolean;
   acceptedLGPD: boolean;
+  passwordNeedsReset: boolean;
 }
 
 interface Gestor {
@@ -260,6 +261,9 @@ function App() {
         const parsed = JSON.parse(storedUser);
         setIsAuthenticated(true);
         setCurrentUser(parsed);
+        if (parsed.passwordNeedsReset && parsed.acceptedLGPD) {
+          setShowPasswordReset(true);
+        }
       } catch (e) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -496,14 +500,14 @@ function App() {
         email: authForm.email,
         password: authForm.password
       });
-      const { token, user, needsPasswordReset } = response.data;
+      const { token, user } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       setCurrentUser(user);
 
       if (!user.acceptedLGPD) {
         setIsAuthenticated(true);
-      } else if (needsPasswordReset) {
+      } else if (user.passwordNeedsReset) {
         setShowPasswordReset(true);
         showToast('Aviso: É necessário redefinir a sua senha inicial.');
       } else {
@@ -524,6 +528,11 @@ function App() {
         setCurrentUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
         showToast('Termo de consentimento aceito com sucesso!');
+        
+        if (updatedUser.passwordNeedsReset) {
+          setShowPasswordReset(true);
+          showToast('Aviso: É necessário redefinir a sua senha inicial.');
+        }
       }
     } catch (err) {
       showToast('Erro ao aceitar o termo de consentimento.');
@@ -548,6 +557,11 @@ function App() {
       await api.post('/auth/reset-password', {
         newPassword: passwordResetForm.newPassword
       });
+      if (currentUser) {
+        const updatedUser = { ...currentUser, passwordNeedsReset: false };
+        setCurrentUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
       showToast('Senha redefinida com sucesso! Acesso liberado.');
       setShowPasswordReset(false);
       setIsAuthenticated(true);

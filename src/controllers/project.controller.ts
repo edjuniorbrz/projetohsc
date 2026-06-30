@@ -95,29 +95,33 @@ export const getDashboardStats = async (req: Request, res: Response) => {
   const { id: userId, role } = req.user;
 
   try {
-    if (role === 'SUPER_ADMIN' || role === 'MANAGER') {
-      const totalProjects = await prisma.project.count();
-      const totalTasks = await prisma.task.count();
+    const totalProjects = await prisma.project.count();
+    const totalTasks = await prisma.task.count();
 
-      const analysts = await prisma.user.findMany({
-        where: { role: 'ANALYST' },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          _count: {
-            select: { assignedTasks: true }
-          }
+    // Query all active team members (excluding the base system administrator)
+    const users = await prisma.user.findMany({
+      where: { 
+        isActive: true,
+        email: { not: 'superadmin@portal.com' }
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        _count: {
+          select: { assignedTasks: true }
         }
-      });
+      }
+    });
 
-      const analystWorkload = analysts.map(a => ({
-        id: a.id,
-        name: a.name,
-        email: a.email,
-        taskCount: a._count.assignedTasks
-      }));
+    const analystWorkload = users.map(a => ({
+      id: a.id,
+      name: a.name,
+      email: a.email,
+      taskCount: a._count.assignedTasks
+    }));
 
+    if (role === 'SUPER_ADMIN' || role === 'MANAGER') {
       res.json({
         type: 'MACRO',
         totalProjects,
@@ -195,7 +199,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           doing: doingTasks,
           done: doneTasks
         },
-        assignedProjects
+        assignedProjects,
+        analystWorkload
       });
       return;
     }

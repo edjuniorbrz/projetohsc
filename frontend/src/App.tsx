@@ -188,6 +188,8 @@ function App() {
   const [activeCalendarAnalystId, setActiveCalendarAnalystId] = useState<string | null>(null);
   const [calendarMonths, setCalendarMonths] = useState<Record<string, { year: number; month: number }>>({});
   const [maximizedTaskId, setMaximizedTaskId] = useState<string | null>(null);
+  const [dashSearch, setDashSearch] = useState('');
+  const [dashStatus, setDashStatus] = useState('ALL');
   
   // Create Modals/Forms State
   const [newProject, setNewProject] = useState({ 
@@ -1212,6 +1214,114 @@ function App() {
     );
   };
 
+  const renderDashboardTaskRow = (t: Task, seq: string | null, parentName: string) => {
+    let statusColor = 'var(--text-muted)';
+    let statusLabel: string = t.status;
+    if (t.status === 'TODO') { statusColor = '#9ca3af'; statusLabel = 'A Fazer'; }
+    else if (t.status === 'DOING') { statusColor = 'var(--warning)'; statusLabel = 'Em Progresso'; }
+    else if (t.status === 'DONE') { statusColor = 'var(--accent)'; statusLabel = 'Concluído'; }
+    else if (t.status === 'BLOCKED') { statusColor = 'var(--danger)'; statusLabel = 'Bloqueado'; }
+
+    return (
+      <div 
+        key={t.id} 
+        style={{ 
+          background: 'rgba(255, 255, 255, 0.02)', 
+          border: '1px solid rgba(255, 255, 255, 0.04)', 
+          borderRadius: '10px', 
+          padding: '12px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '12px'
+        }}
+      >
+        <div style={{ flexGrow: 1, minWidth: 0, textAlign: 'left' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 700, color: '#fff', fontSize: '0.85rem' }}>
+              {seq ? `[${seq}] ` : ''}{t.title}
+            </span>
+            {t.isUrgent && (
+              <span style={{ fontSize: '0.65rem', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                URGENTE
+              </span>
+            )}
+          </div>
+          
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+            <span style={{ color: t.projectId ? 'var(--primary)' : 'var(--accent)', fontWeight: 600 }}>{parentName}</span>
+            {t.dataInicioProgramada && (
+              <span> • Prazo: {formatDateString(t.dataInicioProgramada)} a {t.dataPrevistaFinalizar ? formatDateString(t.dataPrevistaFinalizar) : 'Não definido'}</span>
+            )}
+          </div>
+
+          {/* Progress bar */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+            <div className="gantt-progress-bg" style={{ height: '4px', flexGrow: 1, margin: 0 }}>
+              <div className="gantt-progress-bar" style={{ width: `${t.porcentagemExecucao}%` }}></div>
+            </div>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', minWidth: '24px', textAlign: 'right' }}>{t.porcentagemExecucao}%</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+          {/* Assignees avatars */}
+          {t.assignees && t.assignees.length > 0 && (
+            <div style={{ display: 'flex', gap: '-6px' }}>
+              {t.assignees.slice(0, 3).map(a => (
+                <div 
+                  key={a.id} 
+                  className="avatar animate-hover" 
+                  title={a.name}
+                  style={{ 
+                    width: '18px', 
+                    height: '18px', 
+                    fontSize: '0.6rem', 
+                    margin: '0 -4px 0 0',
+                    border: '1.5px solid var(--bg-primary)'
+                  }}
+                >
+                  {a.name.substring(0, 2).toUpperCase()}
+                </div>
+              ))}
+              {t.assignees.length > 3 && (
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: '6px', alignSelf: 'center' }}>
+                  +{t.assignees.length - 3}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Status badge */}
+          <span 
+            style={{ 
+              fontSize: '0.65rem', 
+              background: 'rgba(255,255,255,0.03)', 
+              color: statusColor, 
+              padding: '4px 8px', 
+              borderRadius: '6px', 
+              fontWeight: 700, 
+              border: `1px solid ${statusColor}1A` 
+            }}
+          >
+            {statusLabel}
+          </span>
+
+          {/* Action icon to open in full screen */}
+          <button 
+            type="button"
+            className="action-icon"
+            onClick={() => setMaximizedTaskId(t.id)}
+            style={{ padding: '6px', background: 'rgba(255,255,255,0.02)' }}
+            title="Ver Detalhes (Tela Inteira)"
+          >
+            <Maximize2 size={12} />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderAnalystTasksList = (analystId: string) => {
     const analystTasks = tasks.filter(t => t.assignees?.some(a => a.id === analystId));
     
@@ -1939,81 +2049,116 @@ function App() {
                 </div>
   
 
-                {/* GANTT TIMELINE CHART */}
-                {projects.length > 0 && (
-                  <div className="card" style={{ marginBottom: '32px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                {/* REPLACEMENT: DEMANDS OVERVIEW (PROJETOS VS DEMANDAS COMPLEXAS) */}
+                <div className="card" style={{ marginBottom: '32px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
                       <h3 style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Calendar className="primary" size={20} /> Cronograma de Projetos Estruturais (Gantt)
+                        <LayoutDashboard className="primary" size={20} /> Painel Geral de Demandas Cadastradas
                       </h3>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Mes Vigente - Planejamento a Longo Prazo</span>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        Acompanhe e filtre todas as demandas do sistema separadas por categoria de origem.
+                      </p>
                     </div>
-                    
-                    <div className="gantt-container">
-                      <div className="gantt-header">
-                        <div className="gantt-col-name">Projeto</div>
-                        <div className="gantt-col-prog">Progresso das Demandas</div>
-                        <div className="gantt-week">Semana 1</div>
-                        <div className="gantt-week">Semana 2</div>
-                        <div className="gantt-week">Semana 3</div>
-                        <div className="gantt-week">Semana 4</div>
-                      </div>
-                      
-                      <div className="gantt-body">
-                        {projects.map((proj, idx) => {
-                           const projTasks = tasks.filter(t => t.projectId === proj.id);
-                           const total = projTasks.length;
-                           const done = projTasks.filter(t => t.status === 'DONE').length;
-                           const percent = total > 0 ? Math.round((done / total) * 100) : 0;
-                           
-                           const startWeek = (idx % 2) + 1;
-                           const durationWeeks = idx % 2 === 0 ? 3 : 2;
-                           const endWeek = startWeek + durationWeeks - 1;
-                           
-                           return (
-                             <div key={proj.id} className="gantt-row">
-                               <div className="gantt-col-name">
-                                 <div className="gantt-proj-title">{proj.title}</div>
-                                 <div className="gantt-proj-desc">
-                                   {proj.description || 'Sem descricao.'}
-                                   {proj.responsibles && proj.responsibles.length > 0 
-                                      ? ` • Responsáveis: ${proj.responsibles.map(r => r.name).join(', ')}`
-                                      : (proj.gestor ? ` • Gestor: ${proj.gestor.name}` : '')}
-                                 </div>
-                               </div>
-                               <div className="gantt-col-prog">
-                                 <div className="gantt-progress-bg">
-                                   <div className="gantt-progress-bar" style={{ width: `${percent}%` }}></div>
-                                 </div>
-                                 <span className="gantt-progress-text">{percent}% (Média de {total} tarefas)</span>
-                               </div>
-                               <div className="gantt-weeks-span">
-                                 <div className="gantt-timeline-grid">
-                                   <div className="gantt-grid-cell"></div>
-                                   <div className="gantt-grid-cell"></div>
-                                   <div className="gantt-grid-cell"></div>
-                                   <div className="gantt-grid-cell"></div>
-                                 </div>
-                                 <div 
-                                   className={`gantt-project-bar color-${idx % 3}`}
-                                   style={{ 
-                                     gridColumnStart: startWeek, 
-                                     gridColumnEnd: endWeek + 1
-                                   }}
-                                 >
-                                   <span className="gantt-bar-label">{percent === 100 ? 'Concluido' : 'Em Andamento'}</span>
-                                 </div>
-                               </div>
-                             </div>
-                           );
-                        })}
-                      </div>
+
+                    {/* Filter controls */}
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <input 
+                        type="text"
+                        placeholder="Buscar demanda..."
+                        className="form-input"
+                        value={dashSearch}
+                        onChange={(e) => setDashSearch(e.target.value)}
+                        style={{ fontSize: '0.75rem', padding: '6px 12px', width: '180px', margin: 0 }}
+                      />
+                      <select
+                        className="form-input"
+                        value={dashStatus}
+                        onChange={(e) => setDashStatus(e.target.value)}
+                        style={{ fontSize: '0.75rem', padding: '6px 12px', width: '130px', margin: 0, height: 'auto' }}
+                      >
+                        <option value="ALL">Todos os Status</option>
+                        <option value="TODO">A Fazer</option>
+                        <option value="DOING">Em Progresso</option>
+                        <option value="BLOCKED">Bloqueados</option>
+                        <option value="DONE">Concluídos</option>
+                      </select>
                     </div>
                   </div>
-                )}
 
+                  <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+                    
+                    {/* COLUMN 1: DEMANDAS DE PROJETOS */}
+                    <div className="card" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.03)', padding: '16px' }}>
+                      <h4 style={{ color: 'var(--primary)', fontWeight: 700, borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '10px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>📂 Demandas de Projetos</span>
+                        <span className="column-badge" style={{ background: 'rgba(14, 165, 233, 0.1)', color: 'var(--primary)', margin: 0 }}>
+                          {tasks.filter(t => t.projectId).length} itens
+                        </span>
+                      </h4>
 
-              </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '420px', overflowY: 'auto', paddingRight: '4px' }}>
+                        {(() => {
+                          const projectTasksFiltered = tasks.filter(t => {
+                            if (!t.projectId) return false;
+                            if (dashStatus !== 'ALL' && t.status !== dashStatus) return false;
+                            if (dashSearch && !t.title.toLowerCase().includes(dashSearch.toLowerCase())) return false;
+                            return true;
+                          });
+
+                          if (projectTasksFiltered.length === 0) {
+                            return (
+                              <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                                Nenhuma demanda de projeto encontrada.
+                              </div>
+                            );
+                          }
+
+                          return projectTasksFiltered.map(t => {
+                            const seq = getTaskSequenceCode(t);
+                            const projName = projects.find(p => p.id === t.projectId)?.title || 'Carregando...';
+                            return renderDashboardTaskRow(t, seq, projName);
+                          });
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* COLUMN 2: DEMANDAS COMPLEXAS INDEPENDENTES */}
+                    <div className="card" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.03)', padding: '16px' }}>
+                      <h4 style={{ color: 'var(--accent)', fontWeight: 700, borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '10px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>⚡ Demandas Complexas</span>
+                        <span className="column-badge" style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent)', margin: 0 }}>
+                          {tasks.filter(t => !t.projectId).length} itens
+                        </span>
+                      </h4>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '420px', overflowY: 'auto', paddingRight: '4px' }}>
+                        {(() => {
+                          const independentTasksFiltered = tasks.filter(t => {
+                            if (t.projectId) return false;
+                            if (dashStatus !== 'ALL' && t.status !== dashStatus) return false;
+                            if (dashSearch && !t.title.toLowerCase().includes(dashSearch.toLowerCase())) return false;
+                            return true;
+                          });
+
+                          if (independentTasksFiltered.length === 0) {
+                            return (
+                              <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                                Nenhuma demanda complexa encontrada.
+                              </div>
+                            );
+                          }
+
+                          return independentTasksFiltered.map(t => {
+                            return renderDashboardTaskRow(t, null, 'Demanda Complexa');
+                          });
+                        })()}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+</div>
             ) : (
               <div>
                 <div className="dashboard-grid">

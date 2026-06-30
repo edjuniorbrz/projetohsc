@@ -40,6 +40,13 @@ export const createTask = async (req: Request, res: Response) => {
 
     if (assigneeIds && Array.isArray(assigneeIds) && assigneeIds.length > 0) {
       EmailService.sendTaskAssignmentEmail(assigneeIds, task.id).catch(err => console.error('[EmailService Error]:', err));
+      
+      await prisma.pendingAcknowledgement.createMany({
+        data: assigneeIds.map((userId: string) => ({
+          userId,
+          taskId: task.id
+        }))
+      });
     }
 
     await AuditService.logAction(

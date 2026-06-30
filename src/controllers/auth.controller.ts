@@ -284,3 +284,59 @@ export const acceptLGPD = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Erro ao registrar consentimento LGPD.' });
   }
 };
+
+export const getPendingAcknowledgements = async (req: Request, res: Response) => {
+  if (!req.user || !req.user.id) {
+    res.status(401).json({ error: 'Não autorizado.' });
+    return;
+  }
+  try {
+    const list = await prisma.pendingAcknowledgement.findMany({
+      where: {
+        userId: req.user.id,
+        acknowledgedAt: null
+      },
+      include: {
+        project: { select: { id: true, title: true, description: true } },
+        task: { 
+          select: { 
+            id: true, 
+            title: true, 
+            projectId: true, 
+            project: { select: { title: true } } 
+          } 
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(list);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar ciências pendentes.' });
+  }
+};
+
+export const acknowledgeAssociations = async (req: Request, res: Response) => {
+  if (!req.user || !req.user.id) {
+    res.status(401).json({ error: 'Não autorizado.' });
+    return;
+  }
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids)) {
+    res.status(400).json({ error: 'IDs de ciência inválidos.' });
+    return;
+  }
+  try {
+    await prisma.pendingAcknowledgement.updateMany({
+      where: {
+        id: { in: ids },
+        userId: req.user.id
+      },
+      data: {
+        acknowledgedAt: new Date()
+      }
+    });
+    res.json({ message: 'Ciência registrada com sucesso.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao registrar ciência.' });
+  }
+};

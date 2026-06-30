@@ -25,6 +25,15 @@ export const createProject = async (req: Request, res: Response) => {
     }
   });
 
+  if (responsibleIds && Array.isArray(responsibleIds) && responsibleIds.length > 0) {
+    await prisma.pendingAcknowledgement.createMany({
+      data: responsibleIds.map((userId: string) => ({
+        userId,
+        projectId: project.id
+      }))
+    });
+  }
+
   res.status(201).json(project);
 };
 
@@ -69,6 +78,12 @@ export const updateProject = async (req: Request, res: Response) => {
       return;
     }
 
+    const existingProj = await prisma.project.findUnique({
+      where: { id },
+      include: { responsibles: { select: { id: true } } }
+    });
+    const existingIds = existingProj ? existingProj.responsibles.map(r => r.id) : [];
+
     const project = await prisma.project.update({
       where: { id },
       data: {
@@ -83,6 +98,19 @@ export const updateProject = async (req: Request, res: Response) => {
         } : { set: [] }
       }
     });
+
+    const addedIds = responsibleIds && Array.isArray(responsibleIds)
+      ? responsibleIds.filter((uid: string) => !existingIds.includes(uid))
+      : [];
+
+    if (addedIds.length > 0) {
+      await prisma.pendingAcknowledgement.createMany({
+        data: addedIds.map((userId: string) => ({
+          userId,
+          projectId: id
+        }))
+      });
+    }
 
     res.json(project);
   } catch (error) {

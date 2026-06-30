@@ -191,6 +191,8 @@ function App() {
   const [maximizedTaskId, setMaximizedTaskId] = useState<string | null>(null);
   const [dashSearch, setDashSearch] = useState('');
   const [dashStatus, setDashStatus] = useState('ALL');
+  const [pendingAcks, setPendingAcks] = useState<any[]>([]);
+  const [showAckModal, setShowAckModal] = useState(false);
   
   // Create Modals/Forms State
   const [newProject, setNewProject] = useState({ 
@@ -279,8 +281,17 @@ function App() {
       fetchAnalysts();
       fetchUsers();
       fetchGestores();
+      fetchPendingAcks();
     }
   }, [isAuthenticated, activeTab]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => {
+      fetchPendingAcks();
+    }, 120000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   // Keep dropdown open if active tab is under "Cadastros"
   useEffect(() => {
@@ -536,6 +547,32 @@ function App() {
       }
     } catch (err) {
       showToast('Erro ao aceitar o termo de consentimento.');
+    }
+  };
+
+  const fetchPendingAcks = async () => {
+    try {
+      const response = await api.get('/auth/pending-acknowledgements');
+      setPendingAcks(response.data);
+      if (response.data.length > 0) {
+        setShowAckModal(true);
+      } else {
+        setShowAckModal(false);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar ciencias pendentes:', err);
+    }
+  };
+
+  const handleAcknowledgeAll = async (idsToAck?: string[]) => {
+    const targetIds = idsToAck || pendingAcks.map(a => a.id);
+    if (targetIds.length === 0) return;
+    try {
+      await api.post('/auth/acknowledge', { ids: targetIds });
+      showToast('Ciência registrada com sucesso!');
+      fetchPendingAcks();
+    } catch (err) {
+      showToast('Erro ao registrar ciência.');
     }
   };
 
@@ -4102,6 +4139,134 @@ function App() {
         if (!t) return null;
         return renderMaximizedTaskModal(t);
       })()}
+
+      {isAuthenticated && showAckModal && pendingAcks.length > 0 && (
+        <div className="modal-backdrop" style={{ backdropFilter: 'blur(20px)', zIndex: 9998 }}>
+          <div 
+            className="card animate-scale" 
+            style={{ 
+              maxWidth: '650px', 
+              width: '95%', 
+              padding: '32px', 
+              background: '#0d111b', 
+              border: '1px solid var(--accent)', 
+              boxShadow: '0 20px 50px rgba(16, 185, 129, 0.25)',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent)', marginBottom: '20px' }}>
+              <Bell size={28} />
+            </div>
+            
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>
+              Novos Vínculos - Ações e Projetos
+            </h2>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '24px' }}>
+              Você foi designado para os seguintes projetos e/ou demandas. Por favor, assinale ciência abaixo para liberar o acesso ao portal.
+            </p>
+            
+            <div 
+              style={{ 
+                background: 'rgba(0, 0, 0, 0.3)', 
+                border: '1px solid rgba(255,255,255,0.03)', 
+                borderRadius: '12px', 
+                padding: '16px', 
+                maxHeight: '260px', 
+                overflowY: 'auto', 
+                textAlign: 'left',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                marginBottom: '24px'
+              }}
+            >
+              {pendingAcks.map((ack: any) => (
+                <div 
+                  key={ack.id} 
+                  style={{ 
+                    background: 'rgba(255,255,255,0.02)', 
+                    border: '1px solid rgba(255,255,255,0.04)', 
+                    borderRadius: '8px', 
+                    padding: '12px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '12px'
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    {ack.projectId ? (
+                      <div>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>
+                          Novo Projeto Vinculado
+                        </span>
+                        <span style={{ fontWeight: 600, color: '#fff', fontSize: '0.85rem' }}>
+                          {ack.project.title}
+                        </span>
+                        {ack.project.description && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {ack.project.description}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '2px' }}>
+                          Nova Demanda Designada
+                        </span>
+                        <span style={{ fontWeight: 600, color: '#fff', fontSize: '0.85rem' }}>
+                          {ack.task.title}
+                        </span>
+                        {ack.task.project && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginTop: '2px' }}>
+                            Origem: {ack.task.project.title}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => handleAcknowledgeAll([ack.id])}
+                    className="btn animate-hover"
+                    style={{ 
+                      padding: '6px 12px', 
+                      fontSize: '0.7rem', 
+                      background: 'rgba(16, 185, 129, 0.1)', 
+                      color: 'var(--accent)', 
+                      border: '1px solid rgba(16, 185, 129, 0.2)',
+                      fontWeight: 600,
+                      borderRadius: '6px',
+                      flexShrink: 0
+                    }}
+                  >
+                    Dar Ciência
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              type="button" 
+              onClick={() => handleAcknowledgeAll()}
+              className="btn btn-primary animate-hover" 
+              style={{ 
+                padding: '12px 28px', 
+                fontSize: '0.9rem', 
+                width: '100%', 
+                fontWeight: 700, 
+                borderRadius: '8px',
+                background: 'var(--accent)',
+                borderColor: 'var(--accent)',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
+              }}
+            >
+              Declarar Ciência de Todos os Vínculos
+            </button>
+          </div>
+        </div>
+      )}
 
       {isAuthenticated && currentUser && !currentUser.acceptedLGPD && (
         <div className="modal-backdrop" style={{ backdropFilter: 'blur(20px)', zIndex: 9999 }}>

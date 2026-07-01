@@ -3546,16 +3546,32 @@ function App() {
 
                         {isUserAssigned && (
                           <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <input 
-                              type="range" 
-                              min="10" 
-                              max="95" 
-                              step="5"
-                              value={t.porcentagemExecucao} 
-                              onChange={(e) => handleUpdateTaskProgress(t.id, parseInt(e.target.value))}
-                              style={{ flexGrow: 1, height: '4px', cursor: 'pointer' }}
+                            <div className="gantt-progress-bg" style={{ flexGrow: 1, height: '6px', margin: 0 }}>
+                              <div className="gantt-progress-bar" style={{ width: `${t.porcentagemExecucao}%` }}></div>
+                            </div>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="1"
+                              value={t.porcentagemExecucao}
+                              onChange={(e) => {
+                                const val = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                                handleUpdateTaskProgress(t.id, val);
+                              }}
+                              style={{
+                                width: '55px',
+                                padding: '2px 4px',
+                                fontSize: '0.8rem',
+                                background: 'rgba(255,255,255,0.02)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                color: '#fff',
+                                borderRadius: '4px',
+                                textAlign: 'center',
+                                outline: 'none'
+                              }}
                             />
-                            <span style={{ fontSize: '0.8rem', minWidth: '30px', textAlign: 'right' }}>{t.porcentagemExecucao}%</span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>%</span>
                           </div>
                         )}
 

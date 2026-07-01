@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createTask, updateTaskStatus, updateTaskProgress, claimTask, listTasks, deleteTask } from '../controllers/task.controller';
+import { createTask, updateTaskStatus, updateTaskProgress, claimTask, listTasks, deleteTask, assignUserToTask } from '../controllers/task.controller';
 import { createComment, downloadCommentAttachment } from '../controllers/comment.controller';
 import { authMiddleware, requireRole } from '../middlewares/auth.middleware';
 import multer from 'multer';
@@ -14,6 +14,7 @@ router.post('/', requireRole(['SUPER_ADMIN', 'MANAGER']), createTask);
 router.patch('/:id/status', updateTaskStatus);
 router.patch('/:id/progress', updateTaskProgress);
 router.patch('/:id/claim', claimTask);
+router.post('/:id/assign', assignUserToTask);
 router.delete('/:id', requireRole(['SUPER_ADMIN', 'MANAGER']), deleteTask);
 
 router.post('/:taskId/comments', upload.single('file'), createComment);

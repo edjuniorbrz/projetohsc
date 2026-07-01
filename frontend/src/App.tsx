@@ -1559,6 +1559,31 @@ function App() {
                   ) : (
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'left' }}>Nenhum executante.</div>
                   )}
+                  
+                  <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <select
+                      className="form-input"
+                      style={{ padding: '2px 6px', fontSize: '0.7rem', height: '24px', width: 'auto', background: 'rgba(255,255,255,0.02)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
+                      value=""
+                      onChange={async (e) => {
+                        const userId = e.target.value;
+                        if (!userId) return;
+                        try {
+                          await api.post(`/tasks/${t.id}/assign`, { userId });
+                          showToast('Analista adicionado à tarefa!');
+                          fetchTasks();
+                          fetchDashboard();
+                        } catch (err: any) {
+                          showToast(err.response?.data?.error || 'Erro ao adicionar analista');
+                        }
+                      }}
+                    >
+                      <option value="">+ Adicionar Analista...</option>
+                      {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                        <option key={u.id} value={u.id}>{u.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {/* Slider de Progresso */}
@@ -2700,14 +2725,39 @@ function App() {
                         <td style={{ padding: '16px' }}>{t.where || '-'}</td>
                         <td style={{ padding: '16px' }}>
                           {t.assignees && t.assignees.length > 0 ? (
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '6px' }}>
                               {t.assignees.map(a => (
                                 <span key={a.id} className="column-badge" style={{ background: 'rgba(255,255,255,0.04)' }}>{a.name}</span>
                               ))}
                             </div>
                           ) : (
-                            <span className="column-badge" style={{ background: 'rgba(14,165,233,0.15)', color: 'var(--primary)' }}>EM ABERTO</span>
+                            <div style={{ marginBottom: '6px' }}>
+                              <span className="column-badge" style={{ background: 'rgba(14,165,233,0.15)', color: 'var(--primary)' }}>EM ABERTO</span>
+                            </div>
                           )}
+                          
+                          <select
+                            className="form-input"
+                            style={{ padding: '2px 6px', fontSize: '0.7rem', height: '24px', width: 'auto', background: 'rgba(255,255,255,0.02)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
+                            value=""
+                            onChange={async (e) => {
+                              const userId = e.target.value;
+                              if (!userId) return;
+                              try {
+                                await api.post(`/tasks/${t.id}/assign`, { userId });
+                                showToast('Analista adicionado à tarefa!');
+                                fetchTasks();
+                                fetchDashboard();
+                              } catch (err: any) {
+                                showToast(err.response?.data?.error || 'Erro ao adicionar analista');
+                              }
+                            }}
+                          >
+                            <option value="">+ Adicionar Analista...</option>
+                            {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                              <option key={u.id} value={u.id}>{u.name}</option>
+                            ))}
+                          </select>
                         </td>
                         <td style={{ padding: '16px', fontSize: '0.8rem' }}>
                           {formatDateString(t.dataInicioProgramada)} a {formatDateString(t.dataPrevistaFinalizar)}
@@ -2905,24 +2955,71 @@ function App() {
                         {hasAssignees ? (
                           <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                             <span style={{ fontSize: '0.7rem', fontWeight: 650 }}>Executores:</span>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '4px' }}>
                               {t.assignees?.map(a => (
                                 <span key={a.id} className="column-badge" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '0.7rem' }}>
                                   {a.name}
                                 </span>
                               ))}
                             </div>
+                            <select
+                              className="form-input"
+                              style={{ padding: '2px 6px', fontSize: '0.7rem', height: '24px', width: 'auto', background: 'rgba(255,255,255,0.02)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', cursor: 'pointer', alignSelf: 'flex-start', outline: 'none' }}
+                              value=""
+                              onChange={async (e) => {
+                                const userId = e.target.value;
+                                if (!userId) return;
+                                try {
+                                  await api.post(`/tasks/${t.id}/assign`, { userId });
+                                  showToast('Analista adicionado à tarefa!');
+                                  fetchTasks();
+                                  fetchDashboard();
+                                } catch (err: any) {
+                                  showToast(err.response?.data?.error || 'Erro ao adicionar analista');
+                                }
+                              }}
+                            >
+                              <option value="">+ Adicionar Analista...</option>
+                              {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                                <option key={u.id} value={u.id}>{u.name}</option>
+                              ))}
+                            </select>
                           </div>
                         ) : (
                           <div style={{ marginTop: '12px', background: 'rgba(14,165,233,0.05)', border: '1px dashed rgba(14,165,233,0.3)', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>
                             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)', display: 'block', marginBottom: '8px' }}>DEMANDA EM ABERTO</span>
-                            <button 
-                              className="btn btn-primary" 
-                              style={{ padding: '6px 12px', fontSize: '0.8rem', height: 'auto', borderRadius: '6px' }}
-                              onClick={() => handleClaimTask(t.id)}
-                            >
-                              Assumir Demanda
-                            </button>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <button 
+                                className="btn btn-primary" 
+                                style={{ padding: '6px 12px', fontSize: '0.8rem', height: 'auto', borderRadius: '6px', width: '100%' }}
+                                onClick={() => handleClaimTask(t.id)}
+                              >
+                                Assumir Demanda
+                              </button>
+                              
+                              <select
+                                className="form-input"
+                                style={{ padding: '2px 6px', fontSize: '0.7rem', height: '24px', width: '100%', background: 'rgba(255,255,255,0.02)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
+                                value=""
+                                onChange={async (e) => {
+                                  const userId = e.target.value;
+                                  if (!userId) return;
+                                  try {
+                                    await api.post(`/tasks/${t.id}/assign`, { userId });
+                                    showToast('Analista designado para a tarefa!');
+                                    fetchTasks();
+                                    fetchDashboard();
+                                  } catch (err: any) {
+                                    showToast(err.response?.data?.error || 'Erro ao adicionar analista');
+                                  }
+                                }}
+                              >
+                                <option value="">Designar Analista...</option>
+                                {users.filter(u => u.role === 'ANALYST').map(u => (
+                                  <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         )}
 
@@ -3044,13 +3141,35 @@ function App() {
                         
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <span style={{ fontSize: '0.7rem', fontWeight: 650 }}>Executores:</span>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                            {t.assignees?.map(a => (
-                              <span key={a.id} className="column-badge" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '0.7rem' }}>
-                                {a.name}
-                              </span>
-                            ))}
-                          </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '4px' }}>
+                              {t.assignees?.map(a => (
+                                <span key={a.id} className="column-badge" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '0.7rem' }}>
+                                  {a.name}
+                                </span>
+                              ))}
+                            </div>
+                            <select
+                              className="form-input"
+                              style={{ padding: '2px 6px', fontSize: '0.7rem', height: '24px', width: 'auto', background: 'rgba(255,255,255,0.02)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', cursor: 'pointer', alignSelf: 'flex-start', outline: 'none' }}
+                              value=""
+                              onChange={async (e) => {
+                                const userId = e.target.value;
+                                if (!userId) return;
+                                try {
+                                  await api.post(`/tasks/${t.id}/assign`, { userId });
+                                  showToast('Analista adicionado à tarefa!');
+                                  fetchTasks();
+                                  fetchDashboard();
+                                } catch (err: any) {
+                                  showToast(err.response?.data?.error || 'Erro ao adicionar analista');
+                                }
+                              }}
+                            >
+                              <option value="">+ Adicionar Analista...</option>
+                              {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                                <option key={u.id} value={u.id}>{u.name}</option>
+                              ))}
+                            </select>
                         </div>
 
                         {hasAssignees && !isUserAssigned && (
@@ -3191,13 +3310,35 @@ function App() {
 
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <span style={{ fontSize: '0.7rem', fontWeight: 650 }}>Executores:</span>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                            {t.assignees?.map(a => (
-                              <span key={a.id} className="column-badge" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '0.7rem' }}>
-                                {a.name}
-                              </span>
-                            ))}
-                          </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '4px' }}>
+                              {t.assignees?.map(a => (
+                                <span key={a.id} className="column-badge" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '0.7rem' }}>
+                                  {a.name}
+                                </span>
+                              ))}
+                            </div>
+                            <select
+                              className="form-input"
+                              style={{ padding: '2px 6px', fontSize: '0.7rem', height: '24px', width: 'auto', background: 'rgba(255,255,255,0.02)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', cursor: 'pointer', alignSelf: 'flex-start', outline: 'none' }}
+                              value=""
+                              onChange={async (e) => {
+                                const userId = e.target.value;
+                                if (!userId) return;
+                                try {
+                                  await api.post(`/tasks/${t.id}/assign`, { userId });
+                                  showToast('Analista adicionado à tarefa!');
+                                  fetchTasks();
+                                  fetchDashboard();
+                                } catch (err: any) {
+                                  showToast(err.response?.data?.error || 'Erro ao adicionar analista');
+                                }
+                              }}
+                            >
+                              <option value="">+ Adicionar Analista...</option>
+                              {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                                <option key={u.id} value={u.id}>{u.name}</option>
+                              ))}
+                            </select>
                         </div>
 
                         <div style={{ marginTop: '12px' }}>
@@ -3331,13 +3472,35 @@ function App() {
                         
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <span style={{ fontSize: '0.7rem', fontWeight: 650 }}>Executores:</span>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                            {t.assignees?.map(a => (
-                              <span key={a.id} className="column-badge" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '0.7rem' }}>
-                                {a.name}
-                              </span>
-                            ))}
-                          </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '4px' }}>
+                              {t.assignees?.map(a => (
+                                <span key={a.id} className="column-badge" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '0.7rem' }}>
+                                  {a.name}
+                                </span>
+                              ))}
+                            </div>
+                            <select
+                              className="form-input"
+                              style={{ padding: '2px 6px', fontSize: '0.7rem', height: '24px', width: 'auto', background: 'rgba(255,255,255,0.02)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', cursor: 'pointer', alignSelf: 'flex-start', outline: 'none' }}
+                              value=""
+                              onChange={async (e) => {
+                                const userId = e.target.value;
+                                if (!userId) return;
+                                try {
+                                  await api.post(`/tasks/${t.id}/assign`, { userId });
+                                  showToast('Analista adicionado à tarefa!');
+                                  fetchTasks();
+                                  fetchDashboard();
+                                } catch (err: any) {
+                                  showToast(err.response?.data?.error || 'Erro ao adicionar analista');
+                                }
+                              }}
+                            >
+                              <option value="">+ Adicionar Analista...</option>
+                              {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                                <option key={u.id} value={u.id}>{u.name}</option>
+                              ))}
+                            </select>
                         </div>
 
                         <div className="gantt-progress-bg" style={{ marginTop: '10px', marginBottom: '0' }}>

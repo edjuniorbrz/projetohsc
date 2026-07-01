@@ -310,3 +310,64 @@ export const deleteTask = async (req: Request, res: Response) => {
     res.status(500).json({ error: err.message || 'Erro ao excluir tarefa.' });
   }
 };
+
+export const assignUserToTask = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { userId } = req.body;
+  
+  if (!userId) {
+    res.status(400).json({ error: 'O ID do usuário é obrigatório.' });
+    return;
+  }
+
+  try {
+    const task = await prisma.task.findUnique({
+      where: { id },
+      include: { assignees: true }
+    });
+    
+    if (!task) {
+      res.status(404).json({ error: 'Tarefa não encontrada.' });
+      return;
+    }
+    
+    const alreadyAssigned = task.assignees.some((u) => u.id === userId);
+    if (alreadyAssigned) {
+      res.status(400).json({ error: 'Este usuário já está designado para esta tarefa.' });
+      return;
+    }
+    
+    const updated = await prisma.task.update({
+      where: { id },
+      data: {
+        assignees: {
+          connect: { id: userId }
+        }
+      },
+      include: {
+        assignees: { select: { id: true, name: true, email: true } }
+      }
+    });
+
+    // Create pending acknowledgement for this user so they see the popup
+    await prisma.pendingAcknowledgement.create({
+      data: {
+        userId,
+        taskId: id
+      }
+    });
+
+    EmailService.sendTaskAssignmentEmail([userId], updated.id).catch(err => console.error('[EmailService Error]:', err));
+    
+    await AuditService.logAction(
+      req.user ? req.user.id : null,
+      'ASSIGN_TASK_USER',
+      `Designou o usuário ID ${userId} para a tarefa "${updated.title}" (ID ${updated.id})`,
+      req.ip
+    );
+
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Erro ao designar usuário.' });
+  }
+};

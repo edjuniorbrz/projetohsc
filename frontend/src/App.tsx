@@ -2143,7 +2143,7 @@ function App() {
                     {/* COLUMN 1: DEMANDAS DE PROJETOS */}
                     <div className="card" style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid rgba(255, 255, 255, 0.03)', padding: '16px' }}>
                       <h4 style={{ color: 'var(--primary)', fontWeight: 700, borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '10px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span>📂 Demandas de Projetos</span>
+                        <span>📂 Projetos</span>
                         <span className="column-badge" style={{ background: 'rgba(14, 165, 233, 0.1)', color: 'var(--primary)', margin: 0 }}>
                           {tasks.filter(t => t.projectId).length} itens
                         </span>

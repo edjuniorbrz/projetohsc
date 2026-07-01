@@ -1115,6 +1115,178 @@ function App() {
     return `${subIdx + 1}.${taskIdx + 1}`;
   };
 
+  const renderGeneralCalendar = () => {
+    const today = new Date();
+    const viewState = calendarMonths['general'] || { year: today.getFullYear(), month: today.getMonth() };
+    const viewYear = viewState.year;
+    const viewMonth = viewState.month;
+    
+    const monthNames = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+
+    const firstDay = new Date(viewYear, viewMonth, 1);
+    const startingDayOfWeek = firstDay.getDay();
+    const totalDays = new Date(viewYear, viewMonth + 1, 0).getDate();
+    
+    const days = [];
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      days.push({ dayNumber: null, date: null });
+    }
+    for (let d = 1; d <= totalDays; d++) {
+      days.push({
+        dayNumber: d,
+        date: new Date(viewYear, viewMonth, d)
+      });
+    }
+
+    const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    const handlePrevMonth = () => {
+      let prevMonth = viewMonth - 1;
+      let prevYear = viewYear;
+      if (prevMonth < 0) {
+        prevMonth = 11;
+        prevYear -= 1;
+      }
+      setCalendarMonths({
+        ...calendarMonths,
+        general: { year: prevYear, month: prevMonth }
+      });
+    };
+
+    const handleNextMonth = () => {
+      let nextMonth = viewMonth + 1;
+      let nextYear = viewYear;
+      if (nextMonth > 11) {
+        nextMonth = 0;
+        nextYear += 1;
+      }
+      setCalendarMonths({
+        ...calendarMonths,
+        general: { year: nextYear, month: nextMonth }
+      });
+    };
+
+    return (
+      <div className="calendar-container" style={{ marginTop: 0 }}>
+        <div className="calendar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button 
+              type="button"
+              onClick={handlePrevMonth}
+              className="btn btn-secondary animate-hover"
+              style={{ width: '28px', height: '28px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+              title="Mês anterior"
+            >
+              ◀
+            </button>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--primary)', minWidth: '140px', textAlign: 'center' }}>
+              {monthNames[viewMonth]} de {viewYear}
+            </span>
+            <button 
+              type="button"
+              onClick={handleNextMonth}
+              className="btn btn-secondary animate-hover"
+              style={{ width: '28px', height: '28px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+              title="Próximo mês"
+            >
+              ▶
+            </button>
+          </div>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+            Passe o mouse nos dias destacados para ver projetos e ações
+          </span>
+        </div>
+        <div className="calendar-grid">
+          {weekdays.map(wd => (
+            <div key={wd} className="calendar-weekday">{wd}</div>
+          ))}
+          {days.map((d, index) => {
+            if (d.dayNumber === null || !d.date) {
+              return <div key={`empty-${index}`} className="calendar-day empty" />;
+            }
+            
+            const pad2 = (n: number) => n.toString().padStart(2, '0');
+            const dateStr = `${d.date.getFullYear()}-${pad2(d.date.getMonth() + 1)}-${pad2(d.date.getDate())}`;
+            
+            const activeProjects = projects.filter(p => {
+              if (!p.dataInicio) return false;
+              const start = p.dataInicio.substring(0, 10);
+              const end = p.dataFim ? p.dataFim.substring(0, 10) : start;
+              return dateStr >= start && dateStr <= end;
+            });
+
+            const activeTasks = tasks.filter(t => {
+              if (!t.dataInicioProgramada) return false;
+              const start = t.dataInicioProgramada.substring(0, 10);
+              const end = t.dataPrevistaFinalizar ? t.dataPrevistaFinalizar.substring(0, 10) : start;
+              return dateStr >= start && dateStr <= end;
+            });
+
+            const hasProjects = activeProjects.length > 0;
+            const hasTasks = activeTasks.length > 0;
+            const hasUrgent = activeTasks.some(t => t.isUrgent);
+            
+            const statusTranslation = {
+              TODO: 'A Fazer',
+              DOING: 'Em Progresso',
+              BLOCKED: 'Bloqueado',
+              DONE: 'Concluído'
+            };
+
+            let tooltipLines = [];
+            if (hasProjects) {
+              tooltipLines.push('📁 PROJETOS ATIVOS:');
+              activeProjects.forEach(p => {
+                tooltipLines.push(`  • ${p.title} (Origem: ${p.categoria || 'Não def.'})`);
+              });
+            }
+            if (hasTasks) {
+              if (tooltipLines.length > 0) tooltipLines.push('');
+              tooltipLines.push('⚡ AÇÕES / DEMANDAS ATIVAS:');
+              activeTasks.forEach(t => {
+                const seq = getTaskSequenceCode(t);
+                const pName = projects.find(p => p.id === t.projectId)?.title || 'Demanda Complexa';
+                const statusL = statusTranslation[t.status] || t.status;
+                tooltipLines.push(`  • ${seq ? `[${seq}] ` : ''}${t.title} (Origem: ${pName} - ${statusL})`);
+              });
+            }
+
+            const tooltipTitle = tooltipLines.length > 0 ? tooltipLines.join('\n') : 'Sem atividades';
+            
+            let dayClass = 'calendar-day';
+            let customStyle = { cursor: (hasProjects || hasTasks) ? 'pointer' : 'default', border: 'none', backgroundColor: '', color: '' };
+
+            if (hasProjects && hasTasks) {
+              dayClass += ' has-tasks';
+              customStyle.border = '1px solid var(--primary)';
+            } else if (hasProjects) {
+              dayClass += ' has-tasks';
+              customStyle.backgroundColor = 'rgba(14, 165, 233, 0.15)';
+              customStyle.color = 'var(--primary)';
+            } else if (hasTasks) {
+              dayClass += hasUrgent ? ' has-urgent-tasks' : ' has-tasks';
+            }
+
+            return (
+              <div 
+                key={`gen-day-${d.dayNumber}`} 
+                className={dayClass}
+                title={tooltipTitle}
+                style={customStyle}
+              >
+                <span className="calendar-day-number">{d.dayNumber}</span>
+                {(hasProjects || hasTasks) && <div className="calendar-day-dot" style={{ background: hasUrgent ? 'var(--danger)' : 'var(--primary)' }} />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderAnalystCalendar = (analystId: string) => {
     const today = new Date();
     const viewState = calendarMonths[analystId] || { year: today.getFullYear(), month: today.getMonth() };
@@ -2372,7 +2544,20 @@ function App() {
               </div>
             )}
 
-            {dashboardData?.analystWorkload && (
+                        {/* CALENDÁRIO GERAL DE PROJETOS E TAREFAS */}
+            <div className="card" style={{ marginBottom: '32px', marginTop: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div>
+                  <h3 style={{ fontWeight: 700, margin: 0 }}>Calendário Geral de Projetos e Demandas</h3>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>
+                    Cronograma unificado de todas as ações 5W2H e projetos em andamento no sistema.
+                  </p>
+                </div>
+              </div>
+              {renderGeneralCalendar()}
+            </div>
+
+{dashboardData?.analystWorkload && (
               <div className="card" style={{ marginBottom: '32px', marginTop: '24px' }}>
                 <h3 style={{ marginBottom: '16px', fontWeight: 600 }}>Carga de Trabalho (Por Analista)</h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

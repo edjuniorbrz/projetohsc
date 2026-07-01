@@ -3560,7 +3560,7 @@ function App() {
                                 handleUpdateTaskProgress(t.id, val);
                               }}
                               style={{
-                                width: '55px',
+                                width: '75px',
                                 padding: '2px 4px',
                                 fontSize: '0.8rem',
                                 background: 'rgba(255,255,255,0.02)',

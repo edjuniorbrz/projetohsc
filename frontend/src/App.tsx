@@ -212,6 +212,12 @@ function App() {
   });
 
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState<{
+    dateStr: string;
+    dateFormatted: string;
+    projects: any[];
+    tasks: any[];
+  } | null>(null);
 
   const [editProjectForm, setEditProjectForm] = useState({
     id: '',
@@ -1115,6 +1121,140 @@ function App() {
     return `${subIdx + 1}.${taskIdx + 1}`;
   };
 
+  const renderCalendarDayModal = () => {
+    if (!selectedCalendarDay) return null;
+    const { dateFormatted, projects: dayProjects, tasks: dayTasks } = selectedCalendarDay;
+    
+    return (
+      <div className="modal-backdrop" onClick={() => setSelectedCalendarDay(null)}>
+        <div 
+          className="modal-card card animate-scale" 
+          onClick={e => e.stopPropagation()} 
+          style={{ 
+            maxWidth: '850px', 
+            width: '90%', 
+            maxHeight: '85vh', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            padding: '28px', 
+            background: '#0d111b',
+            position: 'relative'
+          }}
+        >
+          <button 
+            type="button"
+            onClick={() => setSelectedCalendarDay(null)}
+            style={{ position: 'absolute', top: '20px', right: '20px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+          >
+            <X size={24} />
+          </button>
+
+          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', marginBottom: '4px', textAlign: 'left' }}>
+            Atividades Planejadas
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '24px', textAlign: 'left' }}>
+            Resumo detalhado dos cronogramas e responsabilidades para o dia <strong style={{ color: 'var(--primary)' }}>{dateFormatted}</strong>.
+          </p>
+
+          <div style={{ overflowY: 'auto', flexGrow: 1, paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '24px', textAlign: 'left' }}>
+            
+            {/* SECTION: PROJETOS ATIVOS */}
+            <div>
+              <h4 style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '0.95rem', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '8px', marginBottom: '12px' }}>
+                📂 Projetos Ativos ({dayProjects.length})
+              </h4>
+              {dayProjects.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {dayProjects.map((p: any) => (
+                    <div key={p.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '10px', padding: '14px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                        <span style={{ fontWeight: 700, color: '#fff', fontSize: '0.95rem' }}>{p.title}</span>
+                        {renderProjectCategoryBadge(p.categoria)}
+                      </div>
+                      {p.description && (
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>{p.description}</p>
+                      )}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '0.75rem', color: 'var(--primary)', marginTop: '10px', fontWeight: 600 }}>
+                        <span>Cronograma: {formatDateString(p.dataInicio)} a {formatDateString(p.dataFim)}</span>
+                        {p.responsibles && p.responsibles.length > 0 && (
+                          <span style={{ color: 'var(--text-muted)' }}>• Responsáveis: {p.responsibles.map((r: any) => r.name).join(', ')}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Nenhum projeto estrutural ativo neste dia.</p>
+              )}
+            </div>
+
+            {/* SECTION: TAREFAS ATIVAS */}
+            <div>
+              <h4 style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '0.95rem', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', paddingBottom: '8px', marginBottom: '12px' }}>
+                ⚡ Ações / Demandas Ativas ({dayTasks.length})
+              </h4>
+              {dayTasks.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {dayTasks.map((t: any) => {
+                    const seq = getTaskSequenceCode(t);
+                    const pName = projects.find(p => p.id === t.projectId)?.title || 'Demanda Complexa';
+                    return (
+                      <div key={t.id} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: '10px', padding: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                          <span style={{ fontWeight: 700, color: '#fff', fontSize: '0.95rem' }}>
+                            {seq ? `[${seq}] ` : ''}{t.title}
+                          </span>
+                          <span className="column-badge" style={{ 
+                            background: t.status === 'DONE' ? 'rgba(16, 185, 129, 0.15)' : (t.status === 'DOING' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.05)'),
+                            color: t.status === 'DONE' ? 'var(--accent)' : (t.status === 'DOING' ? 'var(--warning)' : 'var(--text-muted)'),
+                            margin: 0
+                          }}>
+                            {t.status === 'DONE' ? 'CONCLUÍDO' : (t.status === 'DOING' ? 'OPERANDO' : 'AGUARDANDO')}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 600, marginTop: '4px' }}>
+                          Origem: {pName} {t.subChapter && `> ${t.subChapter.title}`}
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', marginTop: '10px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          {t.why && <div><strong>WHY:</strong> {t.why}</div>}
+                          {t.where && <div><strong>WHERE:</strong> {t.where}</div>}
+                          {t.how && <div><strong>HOW:</strong> {t.how}</div>}
+                          {t.howMuch && <div><strong>HOW MUCH:</strong> R$ {t.howMuch.toFixed(2)}</div>}
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.02)' }}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            Executores: {t.assignees && t.assignees.length > 0 ? t.assignees.map((a: any) => a.name).join(', ') : 'Ninguém designado'}
+                          </div>
+                          <button
+                            type="button"
+                            className="action-icon"
+                            onClick={() => {
+                              setSelectedCalendarDay(null);
+                              setMaximizedTaskId(t.id);
+                            }}
+                            style={{ fontSize: '0.7rem', padding: '4px 8px', background: 'rgba(14,165,233,0.1)', color: 'var(--primary)' }}
+                          >
+                            Ver Detalhes / Chat
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Nenhuma ação estruturada planejada para este dia.</p>
+              )}
+            </div>
+
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+
   const renderGeneralCalendar = () => {
     const today = new Date();
     const viewState = calendarMonths['general'] || { year: today.getFullYear(), month: today.getMonth() };
@@ -1271,16 +1411,25 @@ function App() {
             }
 
             return (
-              <div 
-                key={`gen-day-${d.dayNumber}`} 
-                className={dayClass}
-                title={tooltipTitle}
-                style={customStyle}
-              >
-                <span className="calendar-day-number">{d.dayNumber}</span>
-                {(hasProjects || hasTasks) && <div className="calendar-day-dot" style={{ background: hasUrgent ? 'var(--danger)' : 'var(--primary)' }} />}
-              </div>
-            );
+                <div 
+                  key={`gen-day-${d.dayNumber}`} 
+                  className={dayClass}
+                  title={tooltipTitle}
+                  style={customStyle}
+                  onClick={() => {
+                    if (!hasProjects && !hasTasks) return;
+                    setSelectedCalendarDay({
+                      dateStr,
+                      dateFormatted: d.date.toLocaleDateString('pt-BR'),
+                      projects: activeProjects,
+                      tasks: activeTasks
+                    });
+                  }}
+                >
+                  <span className="calendar-day-number">{d.dayNumber}</span>
+                  {(hasProjects || hasTasks) && <div className="calendar-day-dot" style={{ background: hasUrgent ? 'var(--danger)' : 'var(--primary)' }} />}
+                </div>
+              );
           })}
         </div>
       </div>
@@ -4525,6 +4674,8 @@ function App() {
         if (!t) return null;
         return renderMaximizedTaskModal(t);
       })()}
+
+      {selectedCalendarDay && renderCalendarDayModal()}
 
       {isAuthenticated && showAckModal && pendingAcks.length > 0 && (
         <div className="modal-backdrop" style={{ backdropFilter: 'blur(20px)', zIndex: 9998 }}>

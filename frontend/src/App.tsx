@@ -186,6 +186,12 @@ function App() {
   const [analysts, setAnalysts] = useState<User[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [gestores, setGestores] = useState<Gestor[]>([]);
+
+  const selectableResponsibles = [
+    ...gestores.filter(g => g.isActive).map(g => ({ id: g.id, name: g.name, cargo: g.cargo || 'GESTOR' })),
+    ...users.filter(u => u.role === 'SUPER_ADMIN' && u.isActive).map(u => ({ id: u.id, name: u.name, cargo: u.cargo || 'SUPER ADMIN' }))
+  ].sort((a, b) => a.name.localeCompare(b.name));
+
   const [activeCalendarAnalystId, setActiveCalendarAnalystId] = useState<string | null>(null);
   const [calendarMonths, setCalendarMonths] = useState<Record<string, { year: number; month: number }>>({});
   const [maximizedTaskId, setMaximizedTaskId] = useState<string | null>(null);
@@ -1579,7 +1585,7 @@ function App() {
                       }}
                     >
                       <option value="">+ Adicionar Analista...</option>
-                      {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                      {analysts.filter(u => !t.assignees?.some(a => a.id === u.id)).map(u => (
                         <option key={u.id} value={u.id}>{u.name}</option>
                       ))}
                     </select>
@@ -2636,7 +2642,7 @@ function App() {
                   onChange={e => setFilterAnalyst(e.target.value)}
                 >
                   <option value="">Todos os Executores</option>
-                  {users.filter(u => u.role === 'ANALYST').map(u => (
+                  {users.filter(u => u.role === 'ANALYST' || u.role === 'SUPER_ADMIN').map(u => (
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
                 </select>
@@ -2754,7 +2760,7 @@ function App() {
                             }}
                           >
                             <option value="">+ Adicionar Analista...</option>
-                            {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                            {analysts.filter(u => !t.assignees?.some(a => a.id === u.id)).map(u => (
                               <option key={u.id} value={u.id}>{u.name}</option>
                             ))}
                           </select>
@@ -2840,7 +2846,7 @@ function App() {
                   onChange={e => setFilterAnalyst(e.target.value)}
                 >
                   <option value="">Todos os Executores</option>
-                  {users.filter(u => u.role === 'ANALYST').map(u => (
+                  {users.filter(u => u.role === 'ANALYST' || u.role === 'SUPER_ADMIN').map(u => (
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
                 </select>
@@ -2980,7 +2986,7 @@ function App() {
                               }}
                             >
                               <option value="">+ Adicionar Analista...</option>
-                              {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                              {analysts.filter(u => !t.assignees?.some(a => a.id === u.id)).map(u => (
                                 <option key={u.id} value={u.id}>{u.name}</option>
                               ))}
                             </select>
@@ -3015,7 +3021,7 @@ function App() {
                                 }}
                               >
                                 <option value="">Designar Analista...</option>
-                                {users.filter(u => u.role === 'ANALYST').map(u => (
+                                {users.filter(u => u.role === 'ANALYST' || u.role === 'SUPER_ADMIN').map(u => (
                                   <option key={u.id} value={u.id}>{u.name}</option>
                                 ))}
                               </select>
@@ -3166,7 +3172,7 @@ function App() {
                               }}
                             >
                               <option value="">+ Adicionar Analista...</option>
-                              {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                              {analysts.filter(u => !t.assignees?.some(a => a.id === u.id)).map(u => (
                                 <option key={u.id} value={u.id}>{u.name}</option>
                               ))}
                             </select>
@@ -3335,7 +3341,7 @@ function App() {
                               }}
                             >
                               <option value="">+ Adicionar Analista...</option>
-                              {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                              {analysts.filter(u => !t.assignees?.some(a => a.id === u.id)).map(u => (
                                 <option key={u.id} value={u.id}>{u.name}</option>
                               ))}
                             </select>
@@ -3497,7 +3503,7 @@ function App() {
                               }}
                             >
                               <option value="">+ Adicionar Analista...</option>
-                              {users.filter(u => u.role === 'ANALYST' && !t.assignees?.some(a => a.id === u.id)).map(u => (
+                              {analysts.filter(u => !t.assignees?.some(a => a.id === u.id)).map(u => (
                                 <option key={u.id} value={u.id}>{u.name}</option>
                               ))}
                             </select>
@@ -3624,7 +3630,7 @@ function App() {
                 <div className="form-group">
                   <label className="form-label">Gestores Responsáveis (Múltiplos)</label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px', background: 'rgba(0,0,0,0.2)' }}>
-                    {gestores.filter(g => g.isActive).map(gestor => {
+                    {selectableResponsibles.map(gestor => {
                       const isChecked = newProject.responsibleIds.includes(gestor.id);
                       return (
                         <label key={gestor.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '2px 4px', borderRadius: '4px' }} className="animate-hover">
@@ -4283,7 +4289,7 @@ function App() {
               <div className="form-group">
                 <label className="form-label">Gestores Responsáveis (Múltiplos)</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '150px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '10px', background: 'rgba(0,0,0,0.2)' }}>
-                  {gestores.filter(g => g.isActive).map(gestor => {
+                  {selectableResponsibles.map(gestor => {
                     const isChecked = editProjectForm.responsibleIds.includes(gestor.id);
                     return (
                       <label key={gestor.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', padding: '2px 4px', borderRadius: '4px' }} className="animate-hover">

@@ -135,7 +135,9 @@ export const resetPassword = async (req: Request, res: Response) => {
 export const getAnalysts = async (req: Request, res: Response) => {
   try {
     const analysts = await prisma.user.findMany({
-      where: { role: 'ANALYST' },
+      where: { 
+        role: { in: ['ANALYST', 'SUPER_ADMIN'] } 
+      },
       select: { id: true, name: true, email: true }
     });
     res.json(analysts);

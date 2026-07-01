@@ -212,6 +212,7 @@ function App() {
   });
 
   const [isEditProjectModalOpen, setIsEditProjectModalOpen] = useState(false);
+  const [generalCalendarOrigin, setGeneralCalendarOrigin] = useState('ALL');
   const [selectedCalendarDay, setSelectedCalendarDay] = useState<{
     dateStr: string;
     dateFormatted: string;
@@ -1311,32 +1312,46 @@ function App() {
 
     return (
       <div className="calendar-container" style={{ marginTop: 0 }}>
-        <div className="calendar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button 
-              type="button"
-              onClick={handlePrevMonth}
-              className="btn btn-secondary animate-hover"
-              style={{ width: '28px', height: '28px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
-              title="Mês anterior"
+        <div className="calendar-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button 
+                type="button"
+                onClick={handlePrevMonth}
+                className="btn btn-secondary animate-hover"
+                style={{ width: '28px', height: '28px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+                title="Mês anterior"
+              >
+                ◀
+              </button>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--primary)', minWidth: '140px', textAlign: 'center' }}>
+                {monthNames[viewMonth]} de {viewYear}
+              </span>
+              <button 
+                type="button"
+                onClick={handleNextMonth}
+                className="btn btn-secondary animate-hover"
+                style={{ width: '28px', height: '28px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+                title="Próximo mês"
+              >
+                ▶
+              </button>
+            </div>
+
+            <select
+              className="form-input"
+              style={{ padding: '4px 10px', fontSize: '0.8rem', height: '28px', width: 'auto', background: 'rgba(255,255,255,0.02)', color: '#fff', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', cursor: 'pointer', outline: 'none', margin: 0 }}
+              value={generalCalendarOrigin}
+              onChange={(e) => setGeneralCalendarOrigin(e.target.value)}
             >
-              ◀
-            </button>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--primary)', minWidth: '140px', textAlign: 'center' }}>
-              {monthNames[viewMonth]} de {viewYear}
-            </span>
-            <button 
-              type="button"
-              onClick={handleNextMonth}
-              className="btn btn-secondary animate-hover"
-              style={{ width: '28px', height: '28px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
-              title="Próximo mês"
-            >
-              ▶
-            </button>
+              <option value="ALL">Todas as Origens</option>
+              <option value="Jornada Digital">Jornada Digital</option>
+              <option value="Corporativo">Corporativo</option>
+              <option value="HSC">HSC</option>
+            </select>
           </div>
           <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-            Passe o mouse nos dias destacados para ver projetos e ações
+            Clique no dia destacado para ver projetos e ações
           </span>
         </div>
         <div className="calendar-grid">
@@ -1353,6 +1368,7 @@ function App() {
             
             const activeProjects = projects.filter(p => {
               if (!p.dataInicio) return false;
+              if (generalCalendarOrigin !== 'ALL' && p.categoria !== generalCalendarOrigin) return false;
               const start = p.dataInicio.substring(0, 10);
               const end = p.dataFim ? p.dataFim.substring(0, 10) : start;
               return dateStr >= start && dateStr <= end;
@@ -1360,6 +1376,10 @@ function App() {
 
             const activeTasks = tasks.filter(t => {
               if (!t.dataInicioProgramada) return false;
+              const projOfTask = projects.find(p => p.id === t.projectId);
+              if (generalCalendarOrigin !== 'ALL') {
+                if (!projOfTask || projOfTask.categoria !== generalCalendarOrigin) return false;
+              }
               const start = t.dataInicioProgramada.substring(0, 10);
               const end = t.dataPrevistaFinalizar ? t.dataPrevistaFinalizar.substring(0, 10) : start;
               return dateStr >= start && dateStr <= end;
